@@ -23,6 +23,10 @@ module.exports = class Server {
    * @return {{ finalToken: number, newCount: number }} obj
    */
   generateTokenForValue(value, mode = TOKEN_TYPE_ADD_TIME) {
+    console.log('generating Token: ');
+    const printMode = mode === TOKEN_TYPE_ADD_TIME ? 'ADD_TIME' : 'SET_TIME';
+    console.log(`starting code: ${this.startingCode}, value: ${value}, token_count: ${this.count}, mode: ${printMode}`);
+
     const { finalToken, newCount } = encode(this.key, this.startingCode, value, this.count, mode);
     this.count = newCount;
     return finalToken;

@@ -66,7 +66,7 @@ function generateNextToken(currentToken, key) {
   view.setUint32(4, currentToken, false);
 
   // the message should be Uint8Array ref: https://github.com/jedisct1/siphash-js/issues/5#issuecomment-486682407
-  const messageBuffer = new Uint8Array(view.buffer); 
+  const messageBuffer = new Uint8Array(view.buffer);
 
   const { l: low, h: high } = siphash.hash(key, messageBuffer);
 
@@ -98,16 +98,16 @@ function putBaseInToken(token, tokenBase) {
 
 function decodeBase(startingCodeBase, tokenBase) {
   const decodedValue = tokenBase - startingCodeBase;
-  
+
   return decodedValue < 0
     ? decodedValue + 1000
     : decodedValue;
 }
 
 function countIsValid(count, lastCount, value, type, usedCounts = null) {
-  if (value == COUNTER_SYNC_VALUE) {    
+  if (value == COUNTER_SYNC_VALUE) {
     if (count > lastCount - 30) {
-      return true;                                                              
+      return true;
     }
   } else if (count > lastCount) {
     return true;
@@ -118,7 +118,7 @@ function countIsValid(count, lastCount, value, type, usedCounts = null) {
       }
     }
   }
-  return false;                                                                     
+  return false;
 }
 
 function updateUsedCounts(pastUsedCounts, value, newCount, type) {
@@ -150,7 +150,7 @@ function updateUsedCounts(pastUsedCounts, value, newCount, type) {
 function decode(token, startingCode, key, lastCount, usedCounts) {
   token = Number(token) // token should be a number, sometimes might be passed as string
 
-  let validOlderToken = false; 
+  let validOlderToken = false;
 
   const tokenBase = getTokenBase(token);
 

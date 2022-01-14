@@ -55,22 +55,22 @@ module.exports = class Meter {
   }
 
   #isValidToken(tokenValue) {
-    console.log('processing decoded token');                                    
-    // there could be value = 0, so can't use value                             
-    if (tokenValue === null) {                                                       
-      console.log('TOKEN INVALID');                                             
+    console.log('processing decoded token');
+    // there could be value = 0, so can't use value
+    if (tokenValue === null) {
+      console.log('TOKEN INVALID');
       this.invalidTokenCount ++;
       // add an invalid token count (review documentation why this is necessary)
-      // you can also block further token entry                                 
-      return false;                                                                   
-    }                                                                           
-                                                                                
-    if (tokenValue === -2) {                                                         
-      console.log('OLD TOKEN');                                                 
-      return false;                                                                   
-    }                                                                           
+      // you can also block further token entry
+      return false;
+    }
 
-    console.log('VALID TOKEN');                                                 
+    if (tokenValue === -2) {
+      console.log('OLD TOKEN');
+      return false;
+    }
+
+    console.log('VALID TOKEN');
     return true;
   }
 
