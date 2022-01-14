@@ -14,8 +14,9 @@ const server = new Server(STARTING_CODE, KEY, STARTING_COUNT, TIME_DIVIDER);
 // number of tokens to generate
 const numTokens = process.argv[2] || 1;
 
+const VALUE_TO_ENCODE = 1;
 for (let i = 0; i < numTokens; i++) {
   console.log('==================');
-  const token = server.generateTokenForValue(1); // defaults to ADD_TIME token
+  const token = server.generateTokenForValue(VALUE_TO_ENCODE); // defaults to ADD_TIME token
   console.log(token);
 }
