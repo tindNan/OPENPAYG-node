@@ -1,7 +1,7 @@
 const siphash = require('siphash');
 const { convertTo30Bits } = require('./utils');
 
-module.exports = function generateNextToken(currentToken, key) {
+function generateNextToken(currentToken, key) {
   const buf = new ArrayBuffer(8);
   const view = new DataView(buf);
   view.setUint32(0, currentToken, false);
@@ -25,4 +25,19 @@ module.exports = function generateNextToken(currentToken, key) {
   const res = (high ^ low) >>> 0; // always end bitwise ops in JS with >>> 0 to treat it as unsigned, otherwise magic happens
   const token = convertTo30Bits(res);
   return token;
+}
+
+function generateNextExtendedToken(currentToken, key) {
+  const buf = new ArrayBuffer(8);
+  const view = new DataView(buf);
+  view.setFloat64(0, currentToken, false); // TODO: consider if using setBigtUint64 is better 
+
+  const msgBuffer = new Uint8Array(view.buffer);
+
+  return siphash.hash_uint(key, msgBuffer);
+}
+
+module.exports = {
+  generateNextToken,
+  generateNextExtendedToken,
 }

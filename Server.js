@@ -1,4 +1,4 @@
-const encode = require('./encode');
+const { encode, encodeExtended } = require('./encode');
 
 const { KEY, TOKEN_TYPE_ADD_TIME, STARTING_CODE, STARTING_COUNT } = require('./constants');
 
@@ -28,6 +28,16 @@ module.exports = class Server {
     console.log(`starting code: ${this.startingCode}, value: ${value}, token_count: ${this.count}, mode: ${printMode}`);
 
     const { finalToken, newCount } = encode(this.key, this.startingCode, value, this.count, mode);
+    this.count = newCount;
+    return finalToken;
+  }
+
+  generateExtendedTokenForValue(value, mode = TOKEN_TYPE_ADD_TIME) {
+    console.log('generating extended Token: ');
+    const printMode = mode === TOKEN_TYPE_ADD_TIME ? 'ADD_TIME' : 'SET_TIME';
+    console.log(`starting code: ${this.startingCode}, value: ${value}, token_count: ${this.count}, mode: ${printMode}`);
+
+    const { finalToken, newCount } = encodeExtended(this.key, this.startingCode, value, this.count, mode);
     this.count = newCount;
     return finalToken;
   }
