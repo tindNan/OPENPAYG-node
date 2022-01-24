@@ -1,5 +1,6 @@
 const {
   COUNTER_SYNC_VALUE,
+  EXTENDED_COUNTER_SYNC_VALUE,
   MAX_TOKEN_JUMP,
   MAX_TOKEN_JUMP_COUNTER_SYNC,
   MAX_UNUSED_OLDER_TOKENS,
@@ -64,7 +65,7 @@ function decodeExtended(token, startingCode, key, lastCount) {
   const value = decodeExtendedBase(startingCodeBase, tokenBase);
 
   // TODO: define other constants for this
-  const maxAttempts = value === COUNTER_SYNC_VALUE
+  const maxAttempts = value === EXTENDED_COUNTER_SYNC_VALUE
     ? lastCount + MAX_TOKEN_JUMP_COUNTER_SYNC + 1
     : lastCount + MAX_TOKEN_JUMP + 1;
 

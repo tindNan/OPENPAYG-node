@@ -1,7 +1,6 @@
-const { MAX_BASE, TOKEN_VALUE_OFFSET } = require('./constants');
+const { MAX_BASE, TOKEN_VALUE_OFFSET, EXTENDED_TOKEN_VALUE_OFFSET } = require('./constants');
 
 const MAX_EXTENDED_BASE = 999999;
-const TOKEN_VALUE_OFFSET_EXTENDED = 1000000;
 
 function convertTo30Bits(h) {
   const mask = ((1 << (32 - 2 + 1)) - 1) << 2;
@@ -27,7 +26,7 @@ function getTokenBase(token) {
 }
 
 function getExtendedTokenBase(token) {
-  return Number(token) % TOKEN_VALUE_OFFSET_EXTENDED;
+  return Number(token) % EXTENDED_TOKEN_VALUE_OFFSET;
 }
 
 function putBaseInExtendedToken(token, tokenBase) {
