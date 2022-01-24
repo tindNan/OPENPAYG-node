@@ -30,7 +30,7 @@ function generateNextToken(currentToken, key) {
 function generateNextExtendedToken(currentToken, key) {
   const buf = new ArrayBuffer(8);
   const view = new DataView(buf);
-  view.setFloat64(0, currentToken, false); // TODO: consider if using setBigtUint64 is better 
+  view.setFloat64(0, currentToken, false); // TODO: consider if using setBigtUint64 is better
 
   const msgBuffer = new Uint8Array(view.buffer);
 

@@ -111,9 +111,8 @@ function countIsValid(count, lastCount, value, type, usedCounts = null) {
   return false;
 }
 
-// TODO: update this to constants to be used in extended token counts
 function extendedCountIsValid(count, lastCount, value, type, usedCounts = null) {
-  if (value == COUNTER_SYNC_VALUE) {
+  if (value == EXTENDED_COUNTER_SYNC_VALUE) {
     if (count > lastCount - 30) {
       return true;
     }
