@@ -11,6 +11,16 @@ function convertTo30Bits(h) {
   return temp;
 }
 
+// since we are dealing with > 32 bit integers, the operations here should be done using bigints
+function convertTo40Bits(h){      
+  const mask = ((1n << (64n - 24n + 1n)) - 1n) << 24n;
+  let temp = (h & mask) >> 24n; // dealing with BigInts
+  if (temp > 999999999999n) {
+    temp = temp - 99511627777n;
+  }
+  return Number(temp);
+}
+
 function encodeBase(base, number) {
   const encoded = number + base;
   return encoded > 999 ? encoded - 1000 : encoded;
@@ -55,6 +65,7 @@ function decodeBase(startingCodeBase, tokenBase) {
 
 module.exports = {
   convertTo30Bits,
+  convertTo40Bits,
   decodeBase,
   encodeBase,
   encodeExtendedBase,
