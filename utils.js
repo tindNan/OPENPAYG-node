@@ -1,6 +1,4 @@
-const { MAX_BASE, TOKEN_VALUE_OFFSET, EXTENDED_TOKEN_VALUE_OFFSET } = require('./constants');
-
-const MAX_EXTENDED_BASE = 999999;
+const { MAX_BASE, MAX_EXTENDED_BASE, TOKEN_VALUE_OFFSET, EXTENDED_TOKEN_VALUE_OFFSET } = require('./constants');
 
 function convertTo30Bits(h) {
   const mask = ((1 << (32 - 2 + 1)) - 1) << 2;
