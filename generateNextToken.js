@@ -14,17 +14,16 @@ function generateNextToken(currentToken, key) {
   const { l: low, h: high } = siphash.hash(key, messageBuffer);
 
   /*
-   * always end bitwise ops in JS with ">>> 0" in order to leave the number unsigned, otherwise you end up with
-   * strange stuff.
+   * always end bitwise ops in JS with ">>> 0" in order to leave the number unsigned, otherwise
+   * you end up with unexpected numbers
    *
    * for more context please brush up on bitwise operations for javascript
    *
    * ref: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Unsigned_right_shift
    * https://stackoverflow.com/questions/6798111/bitwise-operations-on-32-bit-unsigned-ints
    */
-  const res = (high ^ low) >>> 0; // always end bitwise ops in JS with >>> 0 to treat it as unsigned, otherwise magic happens
-  const token = convertTo30Bits(res);
-  return token;
+  const res = (high ^ low) >>> 0;
+  return convertTo30Bits(res);
 }
 
 function generateNextExtendedToken(currentToken, key) {
@@ -37,9 +36,7 @@ function generateNextExtendedToken(currentToken, key) {
   const { l: low, h: high } = siphash.hash(key, msgBuffer);
   const bigIntFromBinary = BigInt(`0b${high.toString(2)}${low.toString(2)}`);
 
-  const token = convertTo40Bits(bigIntFromBinary);
-
-  return token;
+  return convertTo40Bits(bigIntFromBinary);
 }
 
 module.exports = {
