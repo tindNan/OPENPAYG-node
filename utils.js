@@ -4,21 +4,17 @@ const MAX_EXTENDED_BASE = 999999;
 
 function convertTo30Bits(h) {
   const mask = ((1 << (32 - 2 + 1)) - 1) << 2;
-  let temp = (h & mask) >>> 2; // watched out for signed/unsinged ops
-  if (temp > 999999999) {
-      temp = temp - 73741825;
-  }
-  return temp;
+  const temp = (h & mask) >>> 2; // watched out for signed/unsinged ops
+
+  return temp > 999999999 ? temp - 73741825 : temp;
 }
 
 // since we are dealing with > 32 bit integers, the operations here should be done using bigints
 function convertTo40Bits(h){      
   const mask = ((1n << (64n - 24n + 1n)) - 1n) << 24n;
-  let temp = (h & mask) >> 24n; // dealing with BigInts
-  if (temp > 999999999999n) {
-    temp = temp - 99511627777n;
-  }
-  return Number(temp);
+  const temp = Number((h & mask) >> 24n); // can safely cast at this point back to normal number
+
+  return temp > 999999999999 ? temp - 99511627777 : temp;
 }
 
 function encodeBase(base, number) {
