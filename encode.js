@@ -1,8 +1,8 @@
 const { TOKEN_TYPE_SET_TIME } = require('./constants');
-const { encodeBase, getTokenBase, putBaseInToken } = require('./utils');
-const generateNextToken = require('./generateNextToken');
+const { encodeBase, getTokenBase, putBaseInToken, getExtendedTokenBase, encodeExtendedBase, putBaseInExtendedToken } = require('./utils');
+const { generateNextToken, generateNextExtendedToken } = require('./generateNextToken');
 
-module.exports = function encode(key, startingCode, value, count, mode) {
+function encode(key, startingCode, value, count, mode) {
   const startingCodeBase = getTokenBase(startingCode);
   const tokenBase = encodeBase(startingCodeBase, value);
   let currentToken = putBaseInToken(startingCode, tokenBase);
@@ -28,3 +28,30 @@ module.exports = function encode(key, startingCode, value, count, mode) {
 
   return { newCount, finalToken };
 }
+
+function encodeExtended(key, startingCode, value, count, mode) {
+  const startingCodeBase = getExtendedTokenBase(startingCode);
+  const tokenBase = encodeExtendedBase(startingCodeBase, value);
+  let currentToken = putBaseInExtendedToken(startingCode, tokenBase);
+
+  const currentCountOdd = count % 2;
+
+  let newCount;
+  if (mode === TOKEN_TYPE_SET_TIME) {
+    newCount = currentCountOdd ? count + 2 : count + 1;
+  } else {
+    newCount = currentCountOdd ? count + 1 : count + 2;
+  }
+
+  for (let xn = 0; xn < newCount; xn++) {
+    currentToken = generateNextExtendedToken(currentToken, key);
+  }
+
+  const finalToken = putBaseInExtendedToken(currentToken, tokenBase)
+    .toString()
+    .padStart(12, '0');
+
+  return { newCount, finalToken };
+}
+
+module.exports = { encode, encodeExtended };
