@@ -7,14 +7,7 @@ function encode(key, startingCode, value, count, mode) {
   const tokenBase = encodeBase(startingCodeBase, value);
   let currentToken = putBaseInToken(startingCode, tokenBase);
 
-  const currentCountOdd = count % 2;
-
-  let newCount;
-  if (mode === TOKEN_TYPE_SET_TIME) {
-    newCount = currentCountOdd ? count + 2 : count + 1;
-  } else {
-    newCount = currentCountOdd ? count + 1 : count + 2;
-  }
+  const newCount = getNextCount(count, mode);
 
   for (let xn = 0; xn < newCount; xn++) {
     currentToken = generateNextToken(currentToken, key);
@@ -34,14 +27,7 @@ function encodeExtended(key, startingCode, value, count, mode) {
   const tokenBase = encodeExtendedBase(startingCodeBase, value);
   let currentToken = putBaseInExtendedToken(startingCode, tokenBase);
 
-  const currentCountOdd = count % 2;
-
-  let newCount;
-  if (mode === TOKEN_TYPE_SET_TIME) {
-    newCount = currentCountOdd ? count + 2 : count + 1;
-  } else {
-    newCount = currentCountOdd ? count + 1 : count + 2;
-  }
+  const newCount = getNextCount(count, mode);
 
   for (let xn = 0; xn < newCount; xn++) {
     currentToken = generateNextExtendedToken(currentToken, key);
@@ -52,6 +38,19 @@ function encodeExtended(key, startingCode, value, count, mode) {
     .padStart(12, '0');
 
   return { newCount, finalToken };
+}
+
+function getNextCount(count, mode) {
+  const currentCountOdd = count % 2;
+
+  let newCount;
+  if (mode === TOKEN_TYPE_SET_TIME) {
+    newCount = currentCountOdd ? count + 2 : count + 1;
+  } else {
+    newCount = currentCountOdd ? count + 1 : count + 2;
+  }
+
+  return newCount;
 }
 
 module.exports = { encode, encodeExtended };
