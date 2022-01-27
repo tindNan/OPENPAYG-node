@@ -34,7 +34,7 @@ function generateNextExtendedToken(currentToken, key) {
   const msgBuffer = new Uint8Array(view.buffer);
 
   const { l: low, h: high } = siphash.hash(key, msgBuffer);
-  const bigIntFromBinary = BigInt(`0b${high.toString(2)}${low.toString(2)}`);
+  const bigIntFromBinary = BigInt(`0b${high.toString(2)}${low.toString(2).padStart(32, '0')}`);
 
   return convertTo40Bits(bigIntFromBinary);
 }
