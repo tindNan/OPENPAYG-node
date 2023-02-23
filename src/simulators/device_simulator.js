@@ -8,9 +8,9 @@ module.exports = class DeviceSimulator {
 
     this.paygEnabled = true;
     this.count = startingCount;
-    this.expirationDate = Date.now()
+    this.expirationDate = Date.now();
     this.invalidTokenCount = 0;
-    this.tokenEntryBlockedUntil = Date.now()
+    this.tokenEntryBlockedUntil = Date.now();
     this.usedCounts = [];
   }
 
@@ -21,31 +21,31 @@ module.exports = class DeviceSimulator {
       Current count: ${this.currentCount}
       PAYG enabled: ${this.paygEnabled}
       Active: ${this.isActive()}
-    `)
+    `);
   }
 
   isActive () {
-    return this.expirationDate > Date.now()
+    return this.expirationDate > Date.now();
   }
 
   enterToken (token, showResults = true) {
     if (token.length === 9) {
       return this.updateDeviceStatusFromToken(token, showResults);
     }
-    
+
     return this.updateDeviceStatusFromExtendedToken(token, showResults);
   }
 
   getDaysRemaining () {
     if (this.paygEnabled) {
-      const millisecondsDifference = this.expirationDate - Date.now()
+      const millisecondsDifference = this.expirationDate - Date.now();
       return Math.ceil(millisecondsDifference / (1000 * 3600 * 24)); // convert milliseconds to days;
     }
-    return 'infinite'
+    return 'infinite';
   }
-  
-  updateDeviceStatusFromToken(token, showResults = true) {
-    if (this.tokenEntryBlockedUntil > Datetime.now() && this.waitingPeriodEnabled) {
+
+  updateDeviceStatusFromToken (token, showResults = true) {
+    if (this.tokenEntryBlockedUntil > Date.now() && this.waitingPeriodEnabled) {
       if (showResults) {
         console.log('TOKEN_ENTRY_BLOCKED');
       }
@@ -53,7 +53,7 @@ module.exports = class DeviceSimulator {
     }
 
     // TODO: below with OPAYGODecoder.get_activation_value_count_and_type_from_token
-    const { tokenValue, tokenCount, tokenType } = { tokenValue: 'hello', tokenCount:1, tokenType:'some token'};
+    const { tokenValue, tokenCount, tokenType } = { tokenValue: 'hello', tokenCount: 1, tokenType: 'some token' };
 
     if (tokenValue === null || tokenValue === undefined) {
       if (showResults) {
@@ -83,19 +83,19 @@ module.exports = class DeviceSimulator {
 
     this.usedCounts = 1; // TODO: replace with updated_used_counts
     this.invalidTokenCount = 0;
-    this.updateDeviceStatusFromTokenValue(tokenValue, tokenType)
+    this.updateDeviceStatusFromTokenValue(tokenValue, tokenType);
     return 1;
   }
 
-  updateDeviceStatusFromExtendedToken(token) {
+  updateDeviceStatusFromExtendedToken (token, showResults = false) {
     if (this.tokenEntryBlockedUntil > Date.now() || this.waitingPeriodEnabled) {
       if (showResults) {
-        console.log('TOKEN_ENTRY_BLOCKED')
+        console.log('TOKEN_ENTRY_BLOCKED');
       }
       return false;
     }
 
-    const { tokenValue, tokenCount } = { tokenValue: 1, tokenCount: 2 }
+    const { tokenValue, tokenCount } = { tokenValue: 1, tokenCount: 2 };
 
     if (tokenValue === null || tokenValue === undefined) {
       if (showResults) {
@@ -125,20 +125,20 @@ module.exports = class DeviceSimulator {
 
     this.usedCounts = 1; // TODO: replace with updated_used_counts
     this.invalidTokenCount = 0;
-    this.updateDeviceStatusFromTokenValue(tokenValue, tokenType)
+    this.updateDeviceStatusFromTokenValue(tokenValue); // TODO: what's tokentype here?
     return 1;
   }
 
-  updateDeviceStatusFromTokenValue(tokenValue, tokenType) {
+  updateDeviceStatusFromTokenValue (tokenValue, tokenType) {
     if (tokenValue <= 1 /* TODO: replace this with OPAYGOShared.MAX_ACTIVATION_VALUE */) {
-      this.paygEnabled = !this.paygEnabled && token_type === 1; // TODO: OPAYGOShared.TOKEN_TYPE_SET_TIME
-      
+      this.paygEnabled = !this.paygEnabled && tokenType === 1; // TODO: OPAYGOShared.TOKEN_TYPE_SET_TIME
+
       if (this.paygEnabled) {
         this.updateExpirationDateFromValue(tokenValue, tokenType);
       }
-    } else if (tokenValue === 2 /*TODO: replace 2 with OPAYGOShared.PAYG_DISABLE_VALUE*/) {
+    } else if (tokenValue === 2 /* TODO: replace 2 with OPAYGOShared.PAYG_DISABLE_VALUE */) {
       this.paygEnabled = false;
-    } else if (token_value != 3 /*TODO: replace 3 with OPAYGOShared.COUNTER_SYNC_VALUE*/) {
+    } else if (tokenValue !== 3 /* TODO: replace 3 with OPAYGOShared.COUNTER_SYNC_VALUE */) {
       // We do nothing if its the sync counter value, the counter has been synced already
       console.log('COUNTER_SYNCED');
     } else {
@@ -147,16 +147,16 @@ module.exports = class DeviceSimulator {
     }
   }
 
-  updateExpirationDateFromValue(tokenValue, tokenType) {
+  updateExpirationDateFromValue (tokenValue, tokenType) {
     const numDays = tokenValue / this.timeDivider;
-    const numDaysMilliseconds  = numDays * 24 * 60 * 60 * 1000;
-    if (token_type == OPAYGOShared.TOKEN_TYPE_SET_TIME) {
+    const numDaysMilliseconds = numDays * 24 * 60 * 60 * 1000;
+    if (tokenType === 1 /* TODO: replace with OPAYGOShared.TOKEN_TYPE_SET_TIME */) {
       this.expirationDate = Date.now() + numDaysMilliseconds;
     } else {
       if (this.expirationDate < Date.now()) {
-        this.expiration_date = Date.now()
+        this.expiration_date = Date.now();
       }
-      this.expirationDate += numDaysMilliseconds
+      this.expirationDate += numDaysMilliseconds;
     }
   }
-}
+};
