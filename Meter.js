@@ -7,18 +7,18 @@ const {
   TOKEN_TYPE_ADD_TIME,
   PAYG_DISABLE_VALUE,
   MAX_ACTIVATION_VALUE,
-  TOKEN_TYPE_SET_TIME,
+  TOKEN_TYPE_SET_TIME
 } = require('./constants');
 
 const decode = require('./decode');
 
 module.exports = class Meter {
-  constructor(
+  constructor (
     startingCode = STARTING_CODE,
     key = KEY,
     startingCount = STARTING_COUNT,
     timeDivider,
-    waitingPeriodEnabled = true,
+    waitingPeriodEnabled = true
   ) {
     this.startingCode = startingCode;
     this.key = key;
@@ -31,11 +31,11 @@ module.exports = class Meter {
     this.expirationDate = Date.now(); // use UNIX milliseconds
   }
 
-  enterToken(token) {
+  enterToken (token) {
     const { value, count, type } = decode(token, this.startingCode, this.key, this.count, this.usedCounts);
     const isValidToken = this.#isValidToken(value);
 
-    if(!isValidToken) {
+    if (!isValidToken) {
       return { value, count, type };
     }
 
@@ -48,18 +48,18 @@ module.exports = class Meter {
     this.#updateMeterStatus(value, type);
   }
 
-  printStatus() {
+  printStatus () {
     console.log('EXPIRATION DATE: ', new Date(this.expirationDate));
     console.log('CURRENT COUNT: ', this.count);
     console.log('PAYG Enabled: ', this.paygEnabled);
   }
 
-  #isValidToken(tokenValue) {
+  #isValidToken (tokenValue) {
     console.log('processing decoded token');
     // there could be value = 0, so can't use value
     if (tokenValue === null) {
       console.log('TOKEN INVALID');
-      this.invalidTokenCount ++;
+      this.invalidTokenCount++;
       // add an invalid token count (review documentation why this is necessary)
       // you can also block further token entry
       return false;
@@ -74,7 +74,7 @@ module.exports = class Meter {
     return true;
   }
 
-  #updateUsedCounts(tokenValue, newCount, tokenType) {
+  #updateUsedCounts (tokenValue, newCount, tokenType) {
     let highestCount = Math.max(...this.usedCounts, 0);
 
     if (newCount > highestCount) {
@@ -82,7 +82,7 @@ module.exports = class Meter {
     }
 
     const bottomRange = highestCount - MAX_UNUSED_OLDER_TOKENS;
-    let newUsedCounts = [];
+    const newUsedCounts = [];
 
     if (tokenType !== TOKEN_TYPE_ADD_TIME || tokenValue === COUNTER_SYNC_VALUE || tokenValue === PAYG_DISABLE_VALUE) {
       // if it is not an add time token, we mark all the past tokens as used in the range
@@ -100,7 +100,7 @@ module.exports = class Meter {
     this.usedCounts = newUsedCounts;
   }
 
-  #updateMeterStatus(tokenValue, tokenType) {
+  #updateMeterStatus (tokenValue, tokenType) {
     if (tokenValue <= MAX_ACTIVATION_VALUE) {
       if (!this.paygEnabled && tokenType === TOKEN_TYPE_SET_TIME) {
         this.paygEnabled = true;
@@ -117,7 +117,7 @@ module.exports = class Meter {
     }
   }
 
-  #updateMeterExpirationDate(tokenValue, tokenType) {
+  #updateMeterExpirationDate (tokenValue, tokenType) {
     console.log('tokenValue: ', tokenValue);
     const now = Date.now();
     const numDays = tokenValue / this.timeDivider;
@@ -132,4 +132,4 @@ module.exports = class Meter {
         : this.expirationDate + msToAdd;
     }
   }
-}
+};
