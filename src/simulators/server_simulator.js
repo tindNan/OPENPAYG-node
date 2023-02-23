@@ -1,3 +1,5 @@
+const { MAX_ACTIVATION_VALUE } = require('../constants');
+
 module.exports = class ServerSimulator {
   constructor (startingCode, key, startingCount = 1, restrictedDigitSet = false, timeDivider = 1) {
     this.startingCode = startingCode;
@@ -96,9 +98,9 @@ module.exports = class ServerSimulator {
     const days = Math.ceil((newTime - referenceTime) / (1000 * 3600 * 24));
     const value = Math.round(days * this.timeDivider);
 
-    if (value > 2 /* TODO relace with OPAYGOShared.MAX_ACTIVATION_VALUE */) {
+    if (value > MAX_ACTIVATION_VALUE) {
       if (forceMaximum) {
-        return 2; // TODO: replace OPAYGOShared.MAX_ACTIVATION_VALUE
+        return MAX_ACTIVATION_VALUE;
       }
 
       throw new Error('TOO_MANY_DAYS_TO_ACTIVATE');

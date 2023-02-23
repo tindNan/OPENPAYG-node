@@ -1,3 +1,5 @@
+const { COUNTER_SYNC_VALUE, TOKEN_TYPE_SET_TIME, PAYG_DISABLE_VALUE, MAX_ACTIVATION_VALUE } = require('../constants');
+
 module.exports = class DeviceSimulator {
   constructor (startingCode, key, startingCount = 1, restrictedDigitSet = false, waitingPeriodEnabled = true, timeDivider = 1) {
     this.startingCode = startingCode;
@@ -77,7 +79,7 @@ module.exports = class DeviceSimulator {
       console.log(`TOKEN VALID | Value: ${tokenValue}`);
     }
 
-    if (tokenCount > this.count || tokenValue === 1 /* TODO: replace 1 with counter sync value */) {
+    if (tokenCount > this.count || tokenValue === COUNTER_SYNC_VALUE) {
       this.count = tokenCount;
     }
 
@@ -119,26 +121,25 @@ module.exports = class DeviceSimulator {
       console.log(`TOKEN VALID | Value: ${tokenValue}`);
     }
 
-    if (tokenCount > this.count || tokenValue === 1 /* TODO: replace 1 with counter sync value */) {
+    if (tokenCount > this.count || tokenValue === COUNTER_SYNC_VALUE) {
       this.count = tokenCount;
     }
 
     this.usedCounts = 1; // TODO: replace with updated_used_counts
     this.invalidTokenCount = 0;
-    this.updateDeviceStatusFromTokenValue(tokenValue); // TODO: what's tokentype here?
+    this.updateDeviceStatusFromTokenValue(tokenValue); // TODO: what's tokentype here, needs to match python impl?
     return 1;
   }
 
   updateDeviceStatusFromTokenValue (tokenValue, tokenType) {
-    if (tokenValue <= 1 /* TODO: replace this with OPAYGOShared.MAX_ACTIVATION_VALUE */) {
-      this.paygEnabled = !this.paygEnabled && tokenType === 1; // TODO: OPAYGOShared.TOKEN_TYPE_SET_TIME
-
+    if (tokenValue <= MAX_ACTIVATION_VALUE) {
+      this.paygEnabled = !this.paygEnabled && tokenType === TOKEN_TYPE_SET_TIME;
       if (this.paygEnabled) {
         this.updateExpirationDateFromValue(tokenValue, tokenType);
       }
-    } else if (tokenValue === 2 /* TODO: replace 2 with OPAYGOShared.PAYG_DISABLE_VALUE */) {
+    } else if (tokenValue === PAYG_DISABLE_VALUE) {
       this.paygEnabled = false;
-    } else if (tokenValue !== 3 /* TODO: replace 3 with OPAYGOShared.COUNTER_SYNC_VALUE */) {
+    } else if (tokenValue !== COUNTER_SYNC_VALUE) {
       // We do nothing if its the sync counter value, the counter has been synced already
       console.log('COUNTER_SYNCED');
     } else {
@@ -150,7 +151,7 @@ module.exports = class DeviceSimulator {
   updateExpirationDateFromValue (tokenValue, tokenType) {
     const numDays = tokenValue / this.timeDivider;
     const numDaysMilliseconds = numDays * 24 * 60 * 60 * 1000;
-    if (tokenType === 1 /* TODO: replace with OPAYGOShared.TOKEN_TYPE_SET_TIME */) {
+    if (tokenType === TOKEN_TYPE_SET_TIME) {
       this.expirationDate = Date.now() + numDaysMilliseconds;
     } else {
       if (this.expirationDate < Date.now()) {
