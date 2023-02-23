@@ -2,7 +2,7 @@ const { MAX_BASE, MAX_EXTENDED_BASE, TOKEN_VALUE_OFFSET, EXTENDED_TOKEN_VALUE_OF
 
 function convertTo30Bits (h) {
   const mask = ((1 << (32 - 2 + 1)) - 1) << 2;
-  const temp = (h & mask) >>> 2; // watched out for signed/unsinged ops
+  const temp = (h & mask) >>> 2; // watche out for signed/unsigned ops (javascript gotcha)
 
   return temp > 999999999 ? temp - 73741825 : temp;
 }
