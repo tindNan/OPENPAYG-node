@@ -20,5 +20,5 @@ module.exports = {
   MAX_TOKEN_JUMP_COUNTER_SYNC: 100,
   MAX_UNUSED_OLDER_TOKENS: 8 * 2,
   KEY: siphash.string16_to_key('This is the key!'), // <--------- you can replace 'This is the key'
-  TIME_DIVIDER: 1,
+  TIME_DIVIDER: 1
 };

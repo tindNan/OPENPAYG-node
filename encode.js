@@ -2,7 +2,7 @@ const { TOKEN_TYPE_SET_TIME } = require('./constants');
 const { encodeBase, getTokenBase, putBaseInToken, getExtendedTokenBase, encodeExtendedBase, putBaseInExtendedToken } = require('./utils');
 const { generateNextToken, generateNextExtendedToken } = require('./generateNextToken');
 
-function encode(key, startingCode, value, count, mode) {
+function encode (key, startingCode, value, count, mode) {
   const startingCodeBase = getTokenBase(startingCode);
   const tokenBase = encodeBase(startingCodeBase, value);
   let currentToken = putBaseInToken(startingCode, tokenBase);
@@ -22,7 +22,7 @@ function encode(key, startingCode, value, count, mode) {
   return { newCount, finalToken };
 }
 
-function encodeExtended(key, startingCode, value, count, mode) {
+function encodeExtended (key, startingCode, value, count, mode) {
   const startingCodeBase = getExtendedTokenBase(startingCode);
   const tokenBase = encodeExtendedBase(startingCodeBase, value);
   let currentToken = putBaseInExtendedToken(startingCode, tokenBase);
@@ -40,7 +40,7 @@ function encodeExtended(key, startingCode, value, count, mode) {
   return { newCount, finalToken };
 }
 
-function getNextCount(count, mode) {
+function getNextCount (count, mode) {
   const currentCountOdd = count % 2;
 
   let newCount;

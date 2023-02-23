@@ -5,14 +5,14 @@ const {
   MAX_TOKEN_JUMP_COUNTER_SYNC,
   MAX_UNUSED_OLDER_TOKENS,
   TOKEN_TYPE_ADD_TIME,
-  TOKEN_TYPE_SET_TIME,
+  TOKEN_TYPE_SET_TIME
 } = require('./constants');
 
 const { generateNextToken, generateNextExtendedToken } = require('./generateNextToken');
 const { decodeBase, getTokenBase, putBaseInToken, getExtendedTokenBase, putBaseInExtendedToken } = require('./utils');
 
-function decode(token, startingCode, key, lastCount, usedCounts) {
-  token = Number(token) // token should be a number, sometimes might be passed as string
+function decode (token, startingCode, key, lastCount, usedCounts) {
+  token = Number(token); // token should be a number, sometimes might be passed as string
 
   let validOlderToken = false;
 
@@ -55,7 +55,7 @@ function decode(token, startingCode, key, lastCount, usedCounts) {
   return { value: null, count: null, type: null };
 }
 
-function decodeExtended(token, startingCode, key, lastCount) {
+function decodeExtended (token, startingCode, key, lastCount) {
   token = Number(token);
   let validOlderToken = false;
   const tokenBase = getExtendedTokenBase(token);
@@ -94,7 +94,7 @@ function decodeExtended(token, startingCode, key, lastCount) {
   return { value: null, count: null, type: null };
 }
 
-function countIsValid(count, lastCount, value, type, usedCounts = null) {
+function countIsValid (count, lastCount, value, type, usedCounts = null) {
   if (value == COUNTER_SYNC_VALUE) {
     if (count > lastCount - 30) {
       return true;
@@ -111,7 +111,7 @@ function countIsValid(count, lastCount, value, type, usedCounts = null) {
   return false;
 }
 
-function extendedCountIsValid(count, lastCount, value, type, usedCounts = null) {
+function extendedCountIsValid (count, lastCount, value, type, usedCounts = null) {
   if (value == EXTENDED_COUNTER_SYNC_VALUE) {
     if (count > lastCount - 30) {
       return true;
@@ -130,5 +130,5 @@ function extendedCountIsValid(count, lastCount, value, type, usedCounts = null) 
 
 module.exports = {
   decode,
-  decodeExtended,
+  decodeExtended
 };

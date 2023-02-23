@@ -1,7 +1,7 @@
 const Server = require('./Server');
 
 // YOU CAN CHANGE THESE VARIABLES in constants.js file
-const {STARTING_CODE, KEY, STARTING_COUNT, TIME_DIVIDER, EXTENDED_STARTING_CODE} = require('./constants');
+const { STARTING_CODE, KEY, STARTING_COUNT, TIME_DIVIDER, EXTENDED_STARTING_CODE } = require('./constants');
 
 const server = new Server(STARTING_CODE, KEY, STARTING_COUNT, TIME_DIVIDER);
 

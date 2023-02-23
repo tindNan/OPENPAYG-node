@@ -1,7 +1,7 @@
 const siphash = require('siphash');
 const { convertTo30Bits, convertTo40Bits } = require('./utils');
 
-function generateNextToken(currentToken, key) {
+function generateNextToken (currentToken, key) {
   const buf = new ArrayBuffer(8);
   const view = new DataView(buf);
   view.setUint32(0, currentToken, false);
@@ -26,7 +26,7 @@ function generateNextToken(currentToken, key) {
   return convertTo30Bits(res);
 }
 
-function generateNextExtendedToken(currentToken, key) {
+function generateNextExtendedToken (currentToken, key) {
   const buf = new ArrayBuffer(8);
   const view = new DataView(buf);
   view.setBigInt64(0, BigInt(currentToken), false);
@@ -41,5 +41,5 @@ function generateNextExtendedToken(currentToken, key) {
 
 module.exports = {
   generateNextToken,
-  generateNextExtendedToken,
-}
+  generateNextExtendedToken
+};

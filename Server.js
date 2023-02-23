@@ -9,7 +9,7 @@ module.exports = class Server {
    * @param {number} startingCount - starting count for the # of tokens
    * @param {number} timeDivider - time divider (check OPENPAYG documentation
    */
-  constructor(startingCode = STARTING_CODE, key = KEY, startingCount = STARTING_COUNT, timeDivider = 1) {
+  constructor (startingCode = STARTING_CODE, key = KEY, startingCount = STARTING_COUNT, timeDivider = 1) {
     this.startingCode = startingCode;
     this.key = key;
     this.count = startingCount;
@@ -22,7 +22,7 @@ module.exports = class Server {
    *
    * @return {{ finalToken: number, newCount: number }} obj
    */
-  generateTokenForValue(value, mode = TOKEN_TYPE_ADD_TIME) {
+  generateTokenForValue (value, mode = TOKEN_TYPE_ADD_TIME) {
     console.log('generating Token: ');
     const printMode = mode === TOKEN_TYPE_ADD_TIME ? 'ADD_TIME' : 'SET_TIME';
     console.log(`starting code: ${this.startingCode}, value: ${value}, token_count: ${this.count}, mode: ${printMode}`);
@@ -32,7 +32,7 @@ module.exports = class Server {
     return finalToken;
   }
 
-  generateExtendedTokenForValue(value, mode = TOKEN_TYPE_ADD_TIME) {
+  generateExtendedTokenForValue (value, mode = TOKEN_TYPE_ADD_TIME) {
     console.log('generating extended Token: ');
     const printMode = mode === TOKEN_TYPE_ADD_TIME ? 'ADD_TIME' : 'SET_TIME';
     console.log(`starting code: ${this.startingCode}, value: ${value}, token_count: ${this.count}, mode: ${printMode}`);
@@ -41,4 +41,4 @@ module.exports = class Server {
     this.count = newCount;
     return finalToken;
   }
-}
+};
