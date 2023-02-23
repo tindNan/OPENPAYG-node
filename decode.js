@@ -55,13 +55,14 @@ function decode (token, startingCode, key, lastCount, usedCounts) {
   return { value: null, count: null, type: null };
 }
 
-function decodeExtended (token, startingCode, key, lastCount) {
+function decodeExtended (token, startingCode, key, lastCount, usedCounts) {
   token = Number(token);
   let validOlderToken = false;
   const tokenBase = getExtendedTokenBase(token);
   let currentCode = putBaseInExtendedToken(token, tokenBase);
   const startingCodeBase = getExtendedTokenBase(startingCode);
 
+  // TODO: FIX BROKEN IMPORT
   const value = decodeExtendedBase(startingCodeBase, tokenBase);
 
   // TODO: define other constants for this
@@ -77,6 +78,7 @@ function decodeExtended (token, startingCode, key, lastCount) {
       : TOKEN_TYPE_ADD_TIME;
 
     if (maskedToken === token) {
+      // TODO: what's happening with usedCounts
       if (extendedCountIsValid(count, lastCount, value, type, usedCounts)) {
         return { value, count, type };
       } else {
@@ -95,7 +97,7 @@ function decodeExtended (token, startingCode, key, lastCount) {
 }
 
 function countIsValid (count, lastCount, value, type, usedCounts = null) {
-  if (value == COUNTER_SYNC_VALUE) {
+  if (value === COUNTER_SYNC_VALUE) {
     if (count > lastCount - 30) {
       return true;
     }
@@ -112,7 +114,7 @@ function countIsValid (count, lastCount, value, type, usedCounts = null) {
 }
 
 function extendedCountIsValid (count, lastCount, value, type, usedCounts = null) {
-  if (value == EXTENDED_COUNTER_SYNC_VALUE) {
+  if (value === EXTENDED_COUNTER_SYNC_VALUE) {
     if (count > lastCount - 30) {
       return true;
     }
