@@ -1,4 +1,9 @@
-const { COUNTER_SYNC_VALUE, TOKEN_TYPE_SET_TIME, PAYG_DISABLE_VALUE, MAX_ACTIVATION_VALUE } = require('../constants');
+const {
+  COUNTER_SYNC_VALUE,
+  TOKEN_TYPE_SET_TIME,
+  PAYG_DISABLE_VALUE,
+  MAX_ACTIVATION_VALUE
+} = require('../utils/constants');
 
 module.exports = class DeviceSimulator {
   constructor (startingCode, key, startingCount = 1, restrictedDigitSet = false, waitingPeriodEnabled = true, timeDivider = 1) {

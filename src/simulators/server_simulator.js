@@ -1,4 +1,10 @@
-const { MAX_ACTIVATION_VALUE } = require('../constants');
+const {
+  MAX_ACTIVATION_VALUE,
+  TOKEN_TYPE_ADD_TIME,
+  TOKEN_TYPE_SET_TIME,
+  PAYG_DISABLE_VALUE
+} = require('../utils/constants');
+const { encode } = require('../encode');
 
 module.exports = class ServerSimulator {
   constructor (startingCode, key, startingCount = 1, restrictedDigitSet = false, timeDivider = 1) {
@@ -22,16 +28,16 @@ module.exports = class ServerSimulator {
   }
 
   generatePaygDisableToken () {
-    const { token } = { count: 1, token: 2 };
-    /** TODO
-     * count, token = OPAYGOEncoder.generate_standard_token( 24             starting_code=self.starting_code, 25             key=self.key,
-     *    value=OPAYGOShared.PAYG_DISABLE_VALUE,
-     *    count=self.count,
-     *    restricted_digit_set=self.restricted_digit_set
-     *  )
-     */
+    const { finalToken } = encode(
+      this.startingCode,
+      this.key,
+      PAYG_DISABLE_VALUE,
+      this.count,
+      TOKEN_TYPE_SET_TIME,
+      this.restrictedDigitSet
+    );
 
-    return this.formatToken(token); // TODO: convert to static method
+    return this.formatToken(finalToken);
   }
 
   generateCounterSyncToken () {
@@ -59,30 +65,27 @@ module.exports = class ServerSimulator {
       // if the date is strictly above the furthest date activated, use ADD
       const value = this.getValueToActivate(newExpirationDate, this.expirationDate, force);
       this.expirationDate = newExpirationDate;
-      return this.generateTokenFromValue(value, 1 /* TODO: use OPAYGOShared.TOKEN_TYPE_ADD_TIME */);
+      return this.generateTokenFromValue(value, TOKEN_TYPE_ADD_TIME);
     }
 
-    // if the date is below or equal to the furthes date activated, use SET
+    // if the date is below or equal to the furthest date activated, use SET
     const value = this.getValueToActivate(newExpirationDate, Date.now(), force);
+    console.log('Value to activate', value);
     this.expirationDate = newExpirationDate;
-    return this.generateTokenFromValue(value, 1 /* TODO; use OPAYGOShared.TOKEN_TYPE_SET_TIME */);
+    return this.generateTokenFromValue(value, TOKEN_TYPE_SET_TIME);
   }
 
   generateTokenFromValue (value, mode) {
-    const { token } = { count: 1, token: 2 };
-    /**
-     * TODO:
-     * count, token = OPAYGOEncoder.generate_standard_token(
-     *   starting_code=self.starting_code,
-     *   key=self.key,
-     *   value=value,
-     *   count=self.count,
-     *   mode=mode,
-     *   restricted_digit_set=self.restricted_digit_set
-     * )
-     */
+    const { finalToken } = encode(
+      this.startingCode,
+      this.key,
+      value,
+      this.count,
+      mode,
+      this.restrictedDigitSet
+    );
 
-    return this.formatToken(token);
+    return this.formatToken(finalToken);
   }
 
   generateExtendedValueToken (value) {

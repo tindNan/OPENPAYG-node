@@ -1,19 +1,41 @@
-const tap = require('tap')
+const tap = require('tap');
+const ServerSimulator = require('../../src/simulators/server_simulator');
+const DeviceSimulator = require('../../src/simulators/device_simulator');
 
-const deviceData = {
-  serialNumber: 'XXX',
-  startingCode: 516959010,
-  key: 'bc41ec9530f6dac86b1a29ab82edc5fb',
-  restrictedDigitSet: False,
-  timeDivider: 1,
-  tokenCount: 1
-};
+const deviceKey = '\xa2\x9a\xb8.\xdc_\xbb\xc4\x1e\xc9S\x0fm\xac\x86\xb1';
+const deviceStartingCode = 123456789;
+const restrictedDigitSet = false;
 
-tap.test('Core token test', (suite) => {
-  suite.test('Entering an invalid token', (t) => {
-    const token = '123 456 789';
-    // device
-  })
-})
+// the tests in this suite are run in order
+tap.test('Simple Scenario', (childTest) => {
+  let serverSimulator, deviceSimulator;
+  childTest.before(() => {
+    console.log('Creating Server and Device Simulators');
+    deviceSimulator = new DeviceSimulator(deviceStartingCode, deviceKey, 0, restrictedDigitSet);
+    serverSimulator = new ServerSimulator(deviceStartingCode, deviceKey, 0, restrictedDigitSet);
+  });
 
-tap.pass('this is fine')
+  childTest.test('When entering an invalid token the status should remain inactive', (t) => {
+    deviceSimulator.enterToken('123456789');
+    t.notOk(deviceSimulator.isActive());
+    t.end();
+  });
+
+  childTest.test('When adding a valid token for 1 day', (t) => {
+    const oneDayFromNow = Date.now() + (24 * 60 * 60 * 1000);
+    const firstToken = serverSimulator.generateTokenFromDate(oneDayFromNow);
+    deviceSimulator.enterToken(firstToken);
+
+    t.test('Adding the token for the first time should update the expiry date', (t) => {
+      t.ok(deviceSimulator.count === serverSimulator.count);
+      t.strictSame(deviceSimulator.expirationDate, oneDayFromNow);
+      t.end();
+    });
+
+    t.test('Adding the same token agan should not update the expiry date', (t) => {
+      t.ok(deviceSimulator.count === serverSimulator.count);
+      t.strictSame(deviceSimulator.expirationDate, oneDayFromNow);
+      t.end();
+    });
+  });
+});
