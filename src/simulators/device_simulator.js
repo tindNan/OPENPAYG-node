@@ -1,3 +1,4 @@
+const { decode } = require('../decode');
 const {
   COUNTER_SYNC_VALUE,
   TOKEN_TYPE_SET_TIME,
@@ -37,6 +38,7 @@ module.exports = class DeviceSimulator {
 
   enterToken (token, showResults = true) {
     if (token.length === 9) {
+      console.log('9 digit token');
       return this.updateDeviceStatusFromToken(token, showResults);
     }
 
@@ -58,11 +60,19 @@ module.exports = class DeviceSimulator {
       }
       return false;
     }
+    console.log('about to decode');
+    const { value: tokenValue, count: tokenCount, type: tokenType } = decode(
+      token,
+      this.startingCode,
+      this.key,
+      this.count,
+      this.restrictedDigitSet,
+      this.usedCounts
+    );
 
-    // TODO: below with OPAYGODecoder.get_activation_value_count_and_type_from_token
-    const { tokenValue, tokenCount, tokenType } = { tokenValue: 'hello', tokenCount: 1, tokenType: 'some token' };
-
-    if (tokenValue === null || tokenValue === undefined) {
+    console.log('token value: ', tokenValue);
+    if (tokenValue === null) {
+      console.log('INVALID TOKEN DETECTED');
       if (showResults) {
         console.log('TOKEN_INVALID');
       }
@@ -101,7 +111,7 @@ module.exports = class DeviceSimulator {
       }
       return false;
     }
-
+    // TODO: implement use case for update device status from extended token
     const { tokenValue, tokenCount } = { tokenValue: 1, tokenCount: 2 };
 
     if (tokenValue === null || tokenValue === undefined) {
@@ -155,6 +165,7 @@ module.exports = class DeviceSimulator {
 
   updateExpirationDateFromValue (tokenValue, tokenType) {
     const numDays = tokenValue / this.timeDivider;
+    console.log('NUM DAYS VALUE: ', numDays);
     const numDaysMilliseconds = numDays * 24 * 60 * 60 * 1000;
     if (tokenType === TOKEN_TYPE_SET_TIME) {
       this.expirationDate = Date.now() + numDaysMilliseconds;

@@ -6,20 +6,23 @@ const {
   MAX_UNUSED_OLDER_TOKENS,
   TOKEN_TYPE_ADD_TIME,
   TOKEN_TYPE_SET_TIME
-} = require('./constants');
+} = require('./utils/constants');
 
-const { generateNextToken, generateNextExtendedToken } = require('./generateNextToken');
-const { decodeBase, getTokenBase, putBaseInToken, getExtendedTokenBase, putBaseInExtendedToken } = require('./utils');
+const { generateNextToken, generateNextExtendedToken } = require('./utils/generateNextToken');
+const { decodeBase, decodeExtendedBase, getTokenBase, putBaseInToken, getExtendedTokenBase, putBaseInExtendedToken } = require('./utils/utils');
 
-function decode (token, startingCode, key, lastCount, usedCounts) {
+function decode (token, startingCode, key, lastCount, restrictedDigitSet = false, usedCounts = null) {
+  // TODO: typescript could help here
   token = Number(token); // token should be a number, sometimes might be passed as string
+
+  if (restrictedDigitSet) {
+    // ADD LOGIC TO HANDLE RESTRICTED DIGITS
+  }
 
   let validOlderToken = false;
 
   const tokenBase = getTokenBase(token);
-
   let currentCode = putBaseInToken(startingCode, tokenBase);
-
   const startingCodeBase = getTokenBase(startingCode);
 
   const value = decodeBase(startingCodeBase, tokenBase);

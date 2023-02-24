@@ -76,7 +76,7 @@ module.exports = class ServerSimulator {
   }
 
   generateTokenFromValue (value, mode) {
-    const { finalToken } = encode(
+    const { finalToken, newCount } = encode(
       this.startingCode,
       this.key,
       value,
@@ -85,6 +85,7 @@ module.exports = class ServerSimulator {
       this.restrictedDigitSet
     );
 
+    this.count = newCount;
     return this.formatToken(finalToken);
   }
 
@@ -99,7 +100,7 @@ module.exports = class ServerSimulator {
     }
 
     const days = Math.ceil((newTime - referenceTime) / (1000 * 3600 * 24));
-    const value = Math.round(days * this.timeDivider);
+    const value = days * this.timeDivider;
 
     if (value > MAX_ACTIVATION_VALUE) {
       if (forceMaximum) {
