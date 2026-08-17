@@ -1,8 +1,15 @@
-const { TOKEN_TYPE_SET_TIME } = require('./constants');
-const { encodeBase, getTokenBase, putBaseInToken, getExtendedTokenBase, encodeExtendedBase, putBaseInExtendedToken } = require('./utils');
-const { generateNextToken, generateNextExtendedToken } = require('./generateNextToken');
+const { TOKEN_TYPE_SET_TIME } = require("./constants");
+const {
+  encodeBase,
+  getTokenBase,
+  putBaseInToken,
+  getExtendedTokenBase,
+  encodeExtendedBase,
+  putBaseInExtendedToken,
+} = require("./utils");
+const { generateNextToken, generateNextExtendedToken } = require("./generateNextToken");
 
-function encode (key, startingCode, value, count, mode) {
+function encode(key, startingCode, value, count, mode) {
   const startingCodeBase = getTokenBase(startingCode);
   const tokenBase = encodeBase(startingCodeBase, value);
   let currentToken = putBaseInToken(startingCode, tokenBase);
@@ -15,16 +22,14 @@ function encode (key, startingCode, value, count, mode) {
 
   // ensure that final token has 9 digits.
   // the implementation can consider 15 digit tokens but that won't be necessary here
-  const finalToken = putBaseInToken(currentToken, tokenBase)
-    .toString()
-    .padStart(9, '0');
+  const finalToken = putBaseInToken(currentToken, tokenBase).toString().padStart(9, "0");
 
   return { newCount, finalToken };
 }
 
 // the extended (12 digit) scheme has no ADD_TIME/SET_TIME modes,
 // the count simply increments by 1 for each token generated
-function encodeExtended (key, startingCode, value, count) {
+function encodeExtended(key, startingCode, value, count) {
   const startingCodeBase = getExtendedTokenBase(startingCode);
   const tokenBase = encodeExtendedBase(startingCodeBase, value);
   let currentToken = putBaseInExtendedToken(startingCode, tokenBase);
@@ -35,14 +40,12 @@ function encodeExtended (key, startingCode, value, count) {
     currentToken = generateNextExtendedToken(currentToken, key);
   }
 
-  const finalToken = putBaseInExtendedToken(currentToken, tokenBase)
-    .toString()
-    .padStart(12, '0');
+  const finalToken = putBaseInExtendedToken(currentToken, tokenBase).toString().padStart(12, "0");
 
   return { newCount, finalToken };
 }
 
-function getNextCount (count, mode) {
+function getNextCount(count, mode) {
   const currentCountOdd = count % 2;
 
   let newCount;

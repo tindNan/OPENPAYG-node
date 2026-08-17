@@ -4,13 +4,20 @@ const {
   MAX_TOKEN_JUMP_COUNTER_SYNC,
   MAX_UNUSED_OLDER_TOKENS,
   TOKEN_TYPE_ADD_TIME,
-  TOKEN_TYPE_SET_TIME
-} = require('./constants');
+  TOKEN_TYPE_SET_TIME,
+} = require("./constants");
 
-const { generateNextToken, generateNextExtendedToken } = require('./generateNextToken');
-const { decodeBase, decodeExtendedBase, getTokenBase, putBaseInToken, getExtendedTokenBase, putBaseInExtendedToken } = require('./utils');
+const { generateNextToken, generateNextExtendedToken } = require("./generateNextToken");
+const {
+  decodeBase,
+  decodeExtendedBase,
+  getTokenBase,
+  putBaseInToken,
+  getExtendedTokenBase,
+  putBaseInExtendedToken,
+} = require("./utils");
 
-function decode (token, startingCode, key, lastCount, usedCounts) {
+function decode(token, startingCode, key, lastCount, usedCounts) {
   token = Number(token); // token should be a number, sometimes might be passed as string
 
   let validOlderToken = false;
@@ -23,18 +30,17 @@ function decode (token, startingCode, key, lastCount, usedCounts) {
 
   const value = decodeBase(startingCodeBase, tokenBase);
 
-  const maxAttempts = value === COUNTER_SYNC_VALUE
-    ? lastCount + MAX_TOKEN_JUMP_COUNTER_SYNC + 1
-    : lastCount + MAX_TOKEN_JUMP + 1;
+  const maxAttempts =
+    value === COUNTER_SYNC_VALUE
+      ? lastCount + MAX_TOKEN_JUMP_COUNTER_SYNC + 1
+      : lastCount + MAX_TOKEN_JUMP + 1;
 
   // the ideal should be the count value of the token + 30
   // assuming this is the first time we are seeing this token
   for (let count = 0; count < maxAttempts; count++) {
     const maskedToken = putBaseInToken(currentCode, tokenBase);
 
-    const type = count % 2
-      ? TOKEN_TYPE_SET_TIME
-      : TOKEN_TYPE_ADD_TIME;
+    const type = count % 2 ? TOKEN_TYPE_SET_TIME : TOKEN_TYPE_ADD_TIME;
 
     if (maskedToken === token) {
       if (countIsValid(count, lastCount, value, type, usedCounts)) {
@@ -56,7 +62,7 @@ function decode (token, startingCode, key, lastCount, usedCounts) {
 
 // the extended (12 digit) scheme has no ADD_TIME/SET_TIME modes,
 // counts simply increment by 1 for each token generated
-function decodeExtended (token, startingCode, key, lastCount) {
+function decodeExtended(token, startingCode, key, lastCount) {
   token = Number(token);
   const tokenBase = getExtendedTokenBase(token);
   let currentCode = putBaseInExtendedToken(startingCode, tokenBase);
@@ -79,7 +85,7 @@ function decodeExtended (token, startingCode, key, lastCount) {
   return { value: null, count: null };
 }
 
-function countIsValid (count, lastCount, value, type, usedCounts = null) {
+function countIsValid(count, lastCount, value, type, usedCounts = null) {
   if (value === COUNTER_SYNC_VALUE) {
     if (count > lastCount - 30) {
       return true;
@@ -87,7 +93,7 @@ function countIsValid (count, lastCount, value, type, usedCounts = null) {
   } else if (count > lastCount) {
     return true;
   } else if (MAX_UNUSED_OLDER_TOKENS > 0) {
-    if (count > (lastCount - MAX_UNUSED_OLDER_TOKENS)) {
+    if (count > lastCount - MAX_UNUSED_OLDER_TOKENS) {
       if (!usedCounts?.includes(count) && type === TOKEN_TYPE_ADD_TIME) {
         return true;
       }
@@ -98,5 +104,5 @@ function countIsValid (count, lastCount, value, type, usedCounts = null) {
 
 module.exports = {
   decode,
-  decodeExtended
+  decodeExtended,
 };

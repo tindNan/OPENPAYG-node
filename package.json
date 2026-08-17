@@ -2,10 +2,7 @@
   "name": "openpayg-token-node",
   "version": "1.0.0",
   "description": "Node.js implementation of the EnAccess OpenPAYGO Token system",
-  "main": "index.js",
-  "exports": {
-    ".": "./index.js"
-  },
+  "license": "Apache-2.0",
   "files": [
     "index.js",
     "src/",
@@ -13,23 +10,25 @@
     "Server.js",
     "README.md"
   ],
-  "license": "Apache-2.0",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js"
+  },
   "scripts": {
     "start": "node simulation.js",
-    "test": "node --test"
+    "test": "node --test",
+    "lint": "oxlint",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check"
   },
   "dependencies": {
     "siphash": "^1.1.0"
   },
+  "devDependencies": {
+    "oxfmt": "^0.63.0",
+    "oxlint": "^1.78.0"
+  },
   "engines": {
     "node": ">=18"
-  },
-  "devDependencies": {
-    "eslint": "^8.34.0",
-    "eslint-config-semistandard": "^17.0.0",
-    "eslint-config-standard": "^17.0.0",
-    "eslint-plugin-import": "^2.27.5",
-    "eslint-plugin-n": "^15.6.1",
-    "eslint-plugin-promise": "^6.1.1"
   }
 }

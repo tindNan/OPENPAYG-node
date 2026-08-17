@@ -1,24 +1,29 @@
-const Server = require('./Server');
-const Meter = require('./Meter');
-const constants = require('./src/constants');
-const siphash = require('siphash');
+const Server = require("./Server");
+const Meter = require("./Meter");
+const constants = require("./src/constants");
+const siphash = require("siphash");
 
-const { encode, encodeExtended } = require('./src/encode');
-const { decode, decodeExtended } = require('./src/decode');
-const { keyFromHex, convertTo4DigitToken, convertFrom4DigitToken } = require('./src/utils');
+const { encode, encodeExtended } = require("./src/encode");
+const { decode, decodeExtended } = require("./src/decode");
+const { keyFromHex, convertTo4DigitToken, convertFrom4DigitToken } = require("./src/utils");
 
 const {
   MAX_ACTIVATION_VALUE,
   EXTENDED_MAX_ACTIVATION_VALUE,
   PAYG_DISABLE_VALUE,
   COUNTER_SYNC_VALUE,
-  TOKEN_TYPE_ADD_TIME
+  TOKEN_TYPE_ADD_TIME,
 } = constants;
 
-function assertStandardValue (value) {
-  if (!Number.isInteger(value) || value < 0 ||
-    (value > MAX_ACTIVATION_VALUE && value !== PAYG_DISABLE_VALUE && value !== COUNTER_SYNC_VALUE)) {
-    throw Error(`INVALID VALUE: must be 0-${MAX_ACTIVATION_VALUE}, ${PAYG_DISABLE_VALUE} or ${COUNTER_SYNC_VALUE}`);
+function assertStandardValue(value) {
+  if (
+    !Number.isInteger(value) ||
+    value < 0 ||
+    (value > MAX_ACTIVATION_VALUE && value !== PAYG_DISABLE_VALUE && value !== COUNTER_SYNC_VALUE)
+  ) {
+    throw Error(
+      `INVALID VALUE: must be 0-${MAX_ACTIVATION_VALUE}, ${PAYG_DISABLE_VALUE} or ${COUNTER_SYNC_VALUE}`,
+    );
   }
 }
 
@@ -34,13 +39,20 @@ function assertStandardValue (value) {
  * @param {boolean} [options.restrictedDigitSet=false] - emit a 15 digit token using only digits 1-4
  * @return {{ token: string, newCount: number }} the token and the count to persist
  */
-function generateToken ({ key, startingCode, value, count, mode = TOKEN_TYPE_ADD_TIME, restrictedDigitSet = false }) {
+function generateToken({
+  key,
+  startingCode,
+  value,
+  count,
+  mode = TOKEN_TYPE_ADD_TIME,
+  restrictedDigitSet = false,
+}) {
   assertStandardValue(value);
   const { finalToken, newCount } = encode(key, startingCode, value, count, mode);
 
   return {
     token: restrictedDigitSet ? convertTo4DigitToken(Number(finalToken), 30) : finalToken,
-    newCount
+    newCount,
   };
 }
 
@@ -57,7 +69,14 @@ function generateToken ({ key, startingCode, value, count, mode = TOKEN_TYPE_ADD
  * @return {{ value: number|null, count: number|null, type: number|null }}
  *   value is the decoded activation value, -2 for an already used token, null if invalid
  */
-function decodeToken ({ token, key, startingCode, lastCount, usedCounts = [], restrictedDigitSet = false }) {
+function decodeToken({
+  token,
+  key,
+  startingCode,
+  lastCount,
+  usedCounts = [],
+  restrictedDigitSet = false,
+}) {
   if (restrictedDigitSet) {
     token = convertFrom4DigitToken(token);
   }
@@ -76,7 +95,7 @@ function decodeToken ({ token, key, startingCode, lastCount, usedCounts = [], re
  * @param {boolean} [options.restrictedDigitSet=false] - emit a 20 digit token using only digits 1-4
  * @return {{ token: string, newCount: number }} the token and the count to persist
  */
-function generateExtendedToken ({ key, startingCode, value, count, restrictedDigitSet = false }) {
+function generateExtendedToken({ key, startingCode, value, count, restrictedDigitSet = false }) {
   if (!Number.isInteger(value) || value < 0 || value > EXTENDED_MAX_ACTIVATION_VALUE) {
     throw Error(`INVALID VALUE: must be 0-${EXTENDED_MAX_ACTIVATION_VALUE}`);
   }
@@ -85,7 +104,7 @@ function generateExtendedToken ({ key, startingCode, value, count, restrictedDig
 
   return {
     token: restrictedDigitSet ? convertTo4DigitToken(Number(finalToken), 40) : finalToken,
-    newCount
+    newCount,
   };
 }
 
@@ -100,7 +119,7 @@ function generateExtendedToken ({ key, startingCode, value, count, restrictedDig
  * @param {boolean} [options.restrictedDigitSet=false] - token was entered using only digits 1-4
  * @return {{ value: number|null, count: number|null }} value is null if the token is invalid or already used
  */
-function decodeExtendedToken ({ token, key, startingCode, lastCount, restrictedDigitSet = false }) {
+function decodeExtendedToken({ token, key, startingCode, lastCount, restrictedDigitSet = false }) {
   if (restrictedDigitSet) {
     token = convertFrom4DigitToken(token);
   }
@@ -124,5 +143,5 @@ module.exports = {
   keyFromString16: siphash.string16_to_key,
 
   // spec constants
-  constants
+  constants,
 };

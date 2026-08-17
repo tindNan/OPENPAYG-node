@@ -1,5 +1,5 @@
-const { encode, encodeExtended } = require('./src/encode');
-const { convertTo4DigitToken } = require('./src/utils');
+const { encode, encodeExtended } = require("./src/encode");
+const { convertTo4DigitToken } = require("./src/utils");
 
 const {
   KEY,
@@ -9,8 +9,8 @@ const {
   COUNTER_SYNC_VALUE,
   TOKEN_TYPE_ADD_TIME,
   STARTING_CODE,
-  STARTING_COUNT
-} = require('./src/constants');
+  STARTING_COUNT,
+} = require("./src/constants");
 
 module.exports = class Server {
   /**
@@ -21,7 +21,14 @@ module.exports = class Server {
    * @param {boolean} restrictedDigitSet - emit tokens using only digits 1-4 (15/20 digits long)
    * @param {function} logger - optional log sink (e.g. console.log), silent by default
    */
-  constructor (startingCode = STARTING_CODE, key = KEY, startingCount = STARTING_COUNT, timeDivider = 1, restrictedDigitSet = false, logger = () => {}) {
+  constructor(
+    startingCode = STARTING_CODE,
+    key = KEY,
+    startingCount = STARTING_COUNT,
+    timeDivider = 1,
+    restrictedDigitSet = false,
+    logger = () => {},
+  ) {
     this.logger = logger;
     this.startingCode = startingCode;
     this.key = key;
@@ -38,22 +45,28 @@ module.exports = class Server {
    *
    * @return {string} the 9 digit token (15 digits in restricted digit set mode)
    */
-  generateTokenForValue (value, mode = TOKEN_TYPE_ADD_TIME) {
-    if (!Number.isInteger(value) ||
-      (value > MAX_ACTIVATION_VALUE && value !== PAYG_DISABLE_VALUE && value !== COUNTER_SYNC_VALUE) ||
-      value < 0) {
-      throw Error(`INVALID VALUE: must be 0-${MAX_ACTIVATION_VALUE}, ${PAYG_DISABLE_VALUE} or ${COUNTER_SYNC_VALUE}`);
+  generateTokenForValue(value, mode = TOKEN_TYPE_ADD_TIME) {
+    if (
+      !Number.isInteger(value) ||
+      (value > MAX_ACTIVATION_VALUE &&
+        value !== PAYG_DISABLE_VALUE &&
+        value !== COUNTER_SYNC_VALUE) ||
+      value < 0
+    ) {
+      throw Error(
+        `INVALID VALUE: must be 0-${MAX_ACTIVATION_VALUE}, ${PAYG_DISABLE_VALUE} or ${COUNTER_SYNC_VALUE}`,
+      );
     }
 
-    const printMode = mode === TOKEN_TYPE_ADD_TIME ? 'ADD_TIME' : 'SET_TIME';
-    this.logger(`starting code: ${this.startingCode}, value: ${value}, token_count: ${this.count}, mode: ${printMode}`);
+    const printMode = mode === TOKEN_TYPE_ADD_TIME ? "ADD_TIME" : "SET_TIME";
+    this.logger(
+      `starting code: ${this.startingCode}, value: ${value}, token_count: ${this.count}, mode: ${printMode}`,
+    );
 
     const { finalToken, newCount } = encode(this.key, this.startingCode, value, this.count, mode);
     this.count = newCount;
 
-    return this.restrictedDigitSet
-      ? convertTo4DigitToken(Number(finalToken), 30)
-      : finalToken;
+    return this.restrictedDigitSet ? convertTo4DigitToken(Number(finalToken), 30) : finalToken;
   }
 
   /**
@@ -62,7 +75,7 @@ module.exports = class Server {
    *
    * @return {string} the 12 digit token (20 digits in restricted digit set mode)
    */
-  generateExtendedTokenForValue (value) {
+  generateExtendedTokenForValue(value) {
     if (!Number.isInteger(value) || value < 0 || value > EXTENDED_MAX_ACTIVATION_VALUE) {
       throw Error(`INVALID VALUE: must be 0-${EXTENDED_MAX_ACTIVATION_VALUE}`);
     }
@@ -72,8 +85,6 @@ module.exports = class Server {
     const { finalToken, newCount } = encodeExtended(this.key, this.startingCode, value, this.count);
     this.count = newCount;
 
-    return this.restrictedDigitSet
-      ? convertTo4DigitToken(Number(finalToken), 40)
-      : finalToken;
+    return this.restrictedDigitSet ? convertTo4DigitToken(Number(finalToken), 40) : finalToken;
   }
 };
