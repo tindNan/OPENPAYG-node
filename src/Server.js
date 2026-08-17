@@ -1,5 +1,5 @@
-const { encode, encodeExtended } = require("./src/encode");
-const { convertTo4DigitToken } = require("./src/utils");
+const { encode, encodeExtended } = require("./encode");
+const { convertTo4DigitToken } = require("./utils");
 
 const {
   KEY,
@@ -10,7 +10,7 @@ const {
   TOKEN_TYPE_ADD_TIME,
   STARTING_CODE,
   STARTING_COUNT,
-} = require("./src/constants");
+} = require("./constants");
 
 const { debuglog } = require("node:util");
 

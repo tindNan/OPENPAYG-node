@@ -6,8 +6,6 @@
   "files": [
     "index.js",
     "src/",
-    "Meter.js",
-    "Server.js",
     "README.md"
   ],
   "main": "index.js",

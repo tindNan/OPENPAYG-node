@@ -1,5 +1,5 @@
-const Server = require("./Server");
-const Meter = require("./Meter");
+const Server = require("./src/Server");
+const Meter = require("./src/Meter");
 const constants = require("./src/constants");
 const siphash = require("siphash");
 

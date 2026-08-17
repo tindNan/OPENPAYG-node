@@ -12,8 +12,8 @@ const {
   convertFrom4DigitToken,
 } = require("../src/utils");
 const { TOKEN_TYPE_ADD_TIME, TOKEN_TYPE_SET_TIME } = require("../src/constants");
-const Meter = require("../Meter");
-const Server = require("../Server");
+const Meter = require("../src/Meter");
+const Server = require("../src/Server");
 
 // official test key from the OpenPAYGO example implementation documentation (scenario 1)
 // bytes: a2 9a b8 2e dc 5f bb c4 1e c9 53 0f 6d ac 86 b1 as 4 little-endian uint32

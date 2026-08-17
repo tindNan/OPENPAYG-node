@@ -9,12 +9,12 @@ const {
   MAX_ACTIVATION_VALUE,
   TOKEN_TYPE_SET_TIME,
   TIME_DIVIDER,
-} = require("./src/constants");
+} = require("./constants");
 
 const { debuglog } = require("node:util");
 
-const { decode } = require("./src/decode");
-const { convertFrom4DigitToken } = require("./src/utils");
+const { decode } = require("./decode");
+const { convertFrom4DigitToken } = require("./utils");
 
 // waiting period after invalid tokens: 1 minute doubling up to 512 minutes (~8h)
 const WAITING_PERIOD_BASE_MINUTES = 1;
@@ -88,12 +88,6 @@ module.exports = class Meter {
     this.tokenEntryLockedUntil = 0;
     this.#updateMeterStatus(value, type);
     return { value, count, type };
-  }
-
-  printStatus() {
-    console.log("EXPIRATION DATE: ", new Date(this.expirationDate));
-    console.log("CURRENT COUNT: ", this.count);
-    console.log("PAYG Enabled: ", this.paygEnabled);
   }
 
   #isLocked() {
