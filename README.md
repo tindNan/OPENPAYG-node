@@ -10,6 +10,57 @@ node simulation.js <number of tokens to generate>   # server -> meter round trip
 npm test                                            # runs the spec test vectors (node:test, Node 18+)
 ```
 
+## USAGE AS A LIBRARY
+
+The package entry point (`index.js`) exposes the spec contract at two levels.
+
+### Low-level pure functions
+
+```js
+const { generateToken, decodeToken, keyFromHex, constants } = require('openpayg-token-node');
+
+const key = keyFromHex('a29ab82edc5fbbc41ec9530f6dac86b1'); // 16 byte device key as hex
+
+// server side: generate a token, persist newCount for the device
+const { token, newCount } = generateToken({
+  key,
+  startingCode: 123456789,
+  value: 30,                              // days (0-995), 998 = disable PAYG, 999 = counter sync
+  count: 0,                               // the device's current count on the server
+  mode: constants.TOKEN_TYPE_ADD_TIME     // or TOKEN_TYPE_SET_TIME
+});
+
+// device side: decode and validate an entered token
+const { value, count, type } = decodeToken({
+  token,
+  key,
+  startingCode: 123456789,
+  lastCount: 0,        // the device's last known count
+  usedCounts: []       // previously used counts, enables out-of-order add-time tokens
+});
+// value: the activation value, -2 for an already used token, null if invalid
+
+// 12 digit extended tokens: generateExtendedToken / decodeExtendedToken
+// tokens using only digits 1-4: pass restrictedDigitSet: true on both sides
+```
+
+### High-level stateful classes
+
+```js
+const { Server, Meter, keyFromHex } = require('openpayg-token-node');
+
+const key = keyFromHex('a29ab82edc5fbbc41ec9530f6dac86b1');
+const server = new Server(123456789, key, 0);
+const meter = new Meter(123456789, key, 0); // tracks count, used counts, PAYG state,
+                                            // waiting period after invalid tokens
+
+const token = server.generateTokenForValue(30);
+const { value } = meter.enterToken(token);
+```
+
+Both classes are silent by default; pass a logger (e.g. `console.log`) as the last
+constructor argument to see the internal decisions.
+
 ## REFERENCE DOCUMENTATION
 
 1. [OPENPAYG Token general documentation](https://github.com/EnAccess/OpenPAYGO/blob/master/documentation/general_documentation.pdf)

@@ -2,7 +2,17 @@
   "name": "openpayg-token-node",
   "version": "1.0.0",
   "description": "Node.js implementation of the EnAccess OpenPAYGO Token system",
-  "main": "simulation.js",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "src/",
+    "Meter.js",
+    "Server.js",
+    "README.md"
+  ],
   "license": "Apache-2.0",
   "scripts": {
     "start": "node simulation.js",

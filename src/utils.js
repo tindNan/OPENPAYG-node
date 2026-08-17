@@ -89,9 +89,33 @@ function convertFrom4DigitToken (token) {
   return Number(result);
 }
 
+/**
+ * Converts a 16 byte (32 hex character) secret key, as distributed in the
+ * OpenPAYGO device CSV sheets, into the siphash key format (4 x little-endian uint32)
+ *
+ * @param {string} hex - e.g. 'a29ab82edc5fbbc41ec9530f6dac86b1'
+ * @return {Uint32Array} siphash key
+ */
+function keyFromHex (hex) {
+  if (typeof hex !== 'string' || !/^[0-9a-fA-F]{32}$/.test(hex)) {
+    throw Error('INVALID KEY: expected 32 hex characters (16 bytes)');
+  }
+
+  const bytes = Uint8Array.from(hex.match(/../g), b => parseInt(b, 16));
+  const view = new DataView(bytes.buffer);
+  const key = new Uint32Array(4);
+
+  for (let i = 0; i < 4; i++) {
+    key[i] = view.getUint32(i * 4, true); // little-endian per siphash-js
+  }
+
+  return key;
+}
+
 module.exports = {
   convertTo30Bits,
   convertTo40Bits,
+  keyFromHex,
   convertTo4DigitToken,
   convertFrom4DigitToken,
   decodeBase,

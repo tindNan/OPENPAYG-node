@@ -16,8 +16,8 @@ const numTokens = Number(process.argv[2]) || 1;
 const VALUE_TO_ENCODE = 1;
 
 // 9 DIGIT TOKENS: server generates, meter decodes
-const server = new Server(STARTING_CODE, KEY, STARTING_COUNT, TIME_DIVIDER);
-const meter = new Meter(STARTING_CODE, KEY, STARTING_COUNT, TIME_DIVIDER);
+const server = new Server(STARTING_CODE, KEY, STARTING_COUNT, TIME_DIVIDER, false, console.log);
+const meter = new Meter(STARTING_CODE, KEY, STARTING_COUNT, TIME_DIVIDER, true, false, console.log);
 
 for (let i = 0; i < numTokens; i++) {
   console.log('==================');
@@ -28,7 +28,7 @@ for (let i = 0; i < numTokens; i++) {
 meter.printStatus();
 
 // 12 DIGIT TOKENS (extended, no add/set time modes)
-const extendedServer = new Server(EXTENDED_STARTING_CODE, KEY, STARTING_COUNT, TIME_DIVIDER);
+const extendedServer = new Server(EXTENDED_STARTING_CODE, KEY, STARTING_COUNT, TIME_DIVIDER, false, console.log);
 
 for (let i = 0; i < numTokens; i++) {
   console.log('=================');

@@ -19,8 +19,10 @@ module.exports = class Server {
    * @param {number} startingCount - starting count for the # of tokens
    * @param {number} timeDivider - time divider (check OPENPAYG documentation)
    * @param {boolean} restrictedDigitSet - emit tokens using only digits 1-4 (15/20 digits long)
+   * @param {function} logger - optional log sink (e.g. console.log), silent by default
    */
-  constructor (startingCode = STARTING_CODE, key = KEY, startingCount = STARTING_COUNT, timeDivider = 1, restrictedDigitSet = false) {
+  constructor (startingCode = STARTING_CODE, key = KEY, startingCount = STARTING_COUNT, timeDivider = 1, restrictedDigitSet = false, logger = () => {}) {
+    this.logger = logger;
     this.startingCode = startingCode;
     this.key = key;
     this.count = startingCount;
@@ -44,7 +46,7 @@ module.exports = class Server {
     }
 
     const printMode = mode === TOKEN_TYPE_ADD_TIME ? 'ADD_TIME' : 'SET_TIME';
-    console.log(`starting code: ${this.startingCode}, value: ${value}, token_count: ${this.count}, mode: ${printMode}`);
+    this.logger(`starting code: ${this.startingCode}, value: ${value}, token_count: ${this.count}, mode: ${printMode}`);
 
     const { finalToken, newCount } = encode(this.key, this.startingCode, value, this.count, mode);
     this.count = newCount;
@@ -65,7 +67,7 @@ module.exports = class Server {
       throw Error(`INVALID VALUE: must be 0-${EXTENDED_MAX_ACTIVATION_VALUE}`);
     }
 
-    console.log(`starting code: ${this.startingCode}, value: ${value}, token_count: ${this.count}`);
+    this.logger(`starting code: ${this.startingCode}, value: ${value}, token_count: ${this.count}`);
 
     const { finalToken, newCount } = encodeExtended(this.key, this.startingCode, value, this.count);
     this.count = newCount;

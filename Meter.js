@@ -25,8 +25,10 @@ module.exports = class Meter {
     startingCount = STARTING_COUNT,
     timeDivider = TIME_DIVIDER,
     waitingPeriodEnabled = true,
-    restrictedDigitSet = false
+    restrictedDigitSet = false,
+    logger = () => {}
   ) {
+    this.logger = logger;
     this.startingCode = startingCode;
     this.key = key;
     this.timeDivider = timeDivider;
@@ -43,7 +45,7 @@ module.exports = class Meter {
   enterToken (token) {
     if (this.#isLocked()) {
       const minutesLeft = Math.ceil((this.tokenEntryLockedUntil - Date.now()) / 60000);
-      console.log(`TOKEN ENTRY LOCKED, TRY AGAIN IN ${minutesLeft} MINUTE(S)`);
+      this.logger(`TOKEN ENTRY LOCKED, TRY AGAIN IN ${minutesLeft} MINUTE(S)`);
       return { value: null, count: null, type: null };
     }
 
@@ -80,21 +82,21 @@ module.exports = class Meter {
   }
 
   #isValidToken (tokenValue) {
-    console.log('processing decoded token');
+    this.logger('processing decoded token');
     // there could be value = 0, so can't use value
     if (tokenValue === null) {
-      console.log('TOKEN INVALID');
+      this.logger('TOKEN INVALID');
       this.invalidTokenCount++;
       this.#startWaitingPeriod();
       return false;
     }
 
     if (tokenValue === -2) {
-      console.log('OLD TOKEN');
+      this.logger('OLD TOKEN');
       return false;
     }
 
-    console.log('VALID TOKEN');
+    this.logger('VALID TOKEN');
     return true;
   }
 
@@ -148,10 +150,10 @@ module.exports = class Meter {
       this.paygEnabled = false;
     } else if (tokenValue === COUNTER_SYNC_VALUE) {
       // count was already synced in enterToken
-      console.log('METER COUNTER SYNCED');
+      this.logger('METER COUNTER SYNCED');
     } else {
       // values 996 and 997 are reserved for future extensions
-      console.log('RESERVED VALUE, NO STATUS CHANGE');
+      this.logger('RESERVED VALUE, NO STATUS CHANGE');
     }
   }
 
