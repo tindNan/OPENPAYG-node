@@ -4,16 +4,23 @@
   "description": "Node.js implementation of the EnAccess OpenPAYGO Token system",
   "license": "Apache-2.0",
   "files": [
-    "index.js",
-    "src/",
+    "dist/",
     "README.md"
   ],
-  "main": "index.js",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./index.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
   "scripts": {
-    "test": "node --test",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/*.test.ts",
+    "prepack": "npm run build",
     "lint": "oxlint",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check"
@@ -22,10 +29,12 @@
     "siphash": "^1.1.0"
   },
   "devDependencies": {
+    "@types/node": "^26.2.0",
     "oxfmt": "^0.63.0",
-    "oxlint": "^1.78.0"
+    "oxlint": "^1.78.0",
+    "typescript": "^7.0.2"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.18.0"
   }
 }

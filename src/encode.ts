@@ -1,15 +1,26 @@
-const { TOKEN_TYPE_SET_TIME } = require("./constants");
-const {
+import { TOKEN_TYPE_SET_TIME, type SipHashKey, type TokenType } from "./constants.ts";
+import {
   encodeBase,
   getTokenBase,
   putBaseInToken,
   getExtendedTokenBase,
   encodeExtendedBase,
   putBaseInExtendedToken,
-} = require("./utils");
-const { generateNextToken, generateNextExtendedToken } = require("./generateNextToken");
+} from "./utils.ts";
+import { generateNextToken, generateNextExtendedToken } from "./generateNextToken.ts";
 
-function encode(key, startingCode, value, count, mode) {
+export interface EncodeResult {
+  finalToken: string;
+  newCount: number;
+}
+
+export function encode(
+  key: SipHashKey,
+  startingCode: number,
+  value: number,
+  count: number,
+  mode: TokenType,
+): EncodeResult {
   const startingCodeBase = getTokenBase(startingCode);
   const tokenBase = encodeBase(startingCodeBase, value);
   let currentToken = putBaseInToken(startingCode, tokenBase);
@@ -29,7 +40,12 @@ function encode(key, startingCode, value, count, mode) {
 
 // the extended (12 digit) scheme has no ADD_TIME/SET_TIME modes,
 // the count simply increments by 1 for each token generated
-function encodeExtended(key, startingCode, value, count) {
+export function encodeExtended(
+  key: SipHashKey,
+  startingCode: number,
+  value: number,
+  count: number,
+): EncodeResult {
   const startingCodeBase = getExtendedTokenBase(startingCode);
   const tokenBase = encodeExtendedBase(startingCodeBase, value);
   let currentToken = putBaseInExtendedToken(startingCode, tokenBase);
@@ -45,10 +61,10 @@ function encodeExtended(key, startingCode, value, count) {
   return { newCount, finalToken };
 }
 
-function getNextCount(count, mode) {
+function getNextCount(count: number, mode: TokenType): number {
   const currentCountOdd = count % 2;
 
-  let newCount;
+  let newCount: number;
   if (mode === TOKEN_TYPE_SET_TIME) {
     newCount = currentCountOdd ? count + 2 : count + 1;
   } else {
@@ -57,5 +73,3 @@ function getNextCount(count, mode) {
 
   return newCount;
 }
-
-module.exports = { encode, encodeExtended };

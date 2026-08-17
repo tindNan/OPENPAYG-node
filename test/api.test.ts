@@ -1,7 +1,7 @@
-const { test, describe } = require("node:test");
-const assert = require("node:assert");
+import { test, describe } from "node:test";
+import assert from "node:assert";
 
-const {
+import {
   Server,
   Meter,
   generateToken,
@@ -11,7 +11,7 @@ const {
   keyFromHex,
   keyFromString16,
   constants,
-} = require("..");
+} from "../src/index.ts";
 
 // official test key and starting code from the OpenPAYGO example documentation (scenario 1)
 const OFFICIAL_KEY_HEX = "a29ab82edc5fbbc41ec9530f6dac86b1";
@@ -43,7 +43,8 @@ describe("public API", () => {
   test("keyFromHex rejects malformed keys", () => {
     assert.throws(() => keyFromHex("abc"));
     assert.throws(() => keyFromHex("zz9ab82edc5fbbc41ec9530f6dac86b1"));
-    assert.throws(() => keyFromHex(123));
+    // runtime guard for untyped JS consumers
+    assert.throws(() => keyFromHex(123 as unknown as string));
   });
 
   test("decodeToken round-trips through the options API", () => {

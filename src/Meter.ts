@@ -1,4 +1,6 @@
-const {
+import { debuglog } from "node:util";
+
+import {
   STARTING_CODE,
   STARTING_COUNT,
   KEY,
@@ -9,29 +11,54 @@ const {
   MAX_ACTIVATION_VALUE,
   TOKEN_TYPE_SET_TIME,
   TIME_DIVIDER,
-} = require("./constants");
+  type Logger,
+  type SipHashKey,
+  type TokenType,
+} from "./constants.ts";
 
-const { debuglog } = require("node:util");
-
-const { decode } = require("./decode");
-const { convertFrom4DigitToken } = require("./utils");
+import { decode, type DecodeResult } from "./decode.ts";
+import { convertFrom4DigitToken } from "./utils.ts";
 
 // waiting period after invalid tokens: 1 minute doubling up to 512 minutes (~8h)
 const WAITING_PERIOD_BASE_MINUTES = 1;
 const WAITING_PERIOD_MAX_MINUTES = 512;
 
-module.exports = class Meter {
+export interface MeterOptions {
+  /** the device's 9 digit starting code */
+  startingCode?: number;
+  /** siphash key (4 x uint32), see keyFromHex */
+  key?: SipHashKey;
+  /** the device's initial token count */
+  startingCount?: number;
+  /** division factor applied to activation values */
+  timeDivider?: number;
+  /** lock token entry after invalid tokens (default true) */
+  waitingPeriodEnabled?: boolean;
+  /** tokens are entered using only digits 1-4 (default false) */
+  restrictedDigitSet?: boolean;
   /**
-   * @param {object} [options]
-   * @param {number} [options.startingCode] - the device's 9 digit starting code
-   * @param {Uint32Array|number[]} [options.key] - siphash key (4 x uint32), see keyFromHex
-   * @param {number} [options.startingCount] - the device's initial token count
-   * @param {number} [options.timeDivider] - division factor applied to activation values
-   * @param {boolean} [options.waitingPeriodEnabled=true] - lock token entry after invalid tokens
-   * @param {boolean} [options.restrictedDigitSet=false] - tokens are entered using only digits 1-4
-   * @param {function} [options.logger] - log sink (e.g. console.log or a pino method);
-   *   defaults to util.debuglog, enabled by running with NODE_DEBUG=openpaygo
+   * log sink (e.g. console.log or a pino method);
+   * defaults to util.debuglog, enabled by running with NODE_DEBUG=openpaygo
    */
+  logger?: Logger;
+}
+
+export class Meter {
+  startingCode: number;
+  key: SipHashKey;
+  timeDivider: number;
+  paygEnabled = true;
+  invalidTokenCount = 0;
+  usedCounts: number[] = [];
+  count: number;
+  waitingPeriodEnabled: boolean;
+  restrictedDigitSet: boolean;
+  /** UNIX ms until which token entry is refused */
+  tokenEntryLockedUntil = 0;
+  /** UNIX ms */
+  expirationDate: number;
+  logger: Logger;
+
   constructor({
     startingCode = STARTING_CODE,
     key = KEY,
@@ -40,22 +67,18 @@ module.exports = class Meter {
     waitingPeriodEnabled = true,
     restrictedDigitSet = false,
     logger = debuglog("openpaygo"),
-  } = {}) {
+  }: MeterOptions = {}) {
     this.logger = logger;
     this.startingCode = startingCode;
     this.key = key;
     this.timeDivider = timeDivider;
-    this.paygEnabled = true;
-    this.invalidTokenCount = 0;
-    this.usedCounts = [];
     this.count = startingCount;
     this.waitingPeriodEnabled = waitingPeriodEnabled;
     this.restrictedDigitSet = restrictedDigitSet;
-    this.tokenEntryLockedUntil = 0; // UNIX ms until which token entry is refused
-    this.expirationDate = Date.now(); // use UNIX milliseconds
+    this.expirationDate = Date.now();
   }
 
-  enterToken(token) {
+  enterToken(token: string | number): DecodeResult {
     if (this.#isLocked()) {
       const minutesLeft = Math.ceil((this.tokenEntryLockedUntil - Date.now()) / 60000);
       this.logger(`TOKEN ENTRY LOCKED, TRY AGAIN IN ${minutesLeft} MINUTE(S)`);
@@ -66,18 +89,13 @@ module.exports = class Meter {
       token = convertFrom4DigitToken(token);
     }
 
-    const { value, count, type } = decode(
-      token,
-      this.startingCode,
-      this.key,
-      this.count,
-      this.usedCounts,
-    );
-    const isValidToken = this.#isValidToken(value);
+    const result = decode(token, this.startingCode, this.key, this.count, this.usedCounts);
 
-    if (!isValidToken) {
-      return { value, count, type };
+    if (!this.#isValidToken(result)) {
+      return result;
     }
+
+    const { value, count, type } = result;
 
     if (count > this.count || value === COUNTER_SYNC_VALUE) {
       this.count = count;
@@ -87,33 +105,34 @@ module.exports = class Meter {
     this.invalidTokenCount = 0;
     this.tokenEntryLockedUntil = 0;
     this.#updateMeterStatus(value, type);
-    return { value, count, type };
+    return result;
   }
 
-  #isLocked() {
+  #isLocked(): boolean {
     return this.waitingPeriodEnabled && Date.now() < this.tokenEntryLockedUntil;
   }
 
-  #isValidToken(tokenValue) {
+  /** narrows the decode result to the valid-token branch */
+  #isValidToken(result: DecodeResult): result is Extract<DecodeResult, { count: number }> {
     this.logger("processing decoded token");
-    // there could be value = 0, so can't use value
-    if (tokenValue === null) {
-      this.logger("TOKEN INVALID");
-      this.invalidTokenCount++;
-      this.#startWaitingPeriod();
-      return false;
+    // there could be value = 0, so we discriminate on count
+    if (result.count !== null) {
+      this.logger("VALID TOKEN");
+      return true;
     }
 
-    if (tokenValue === -2) {
+    if (result.value === -2) {
       this.logger("OLD TOKEN");
       return false;
     }
 
-    this.logger("VALID TOKEN");
-    return true;
+    this.logger("TOKEN INVALID");
+    this.invalidTokenCount++;
+    this.#startWaitingPeriod();
+    return false;
   }
 
-  #startWaitingPeriod() {
+  #startWaitingPeriod(): void {
     if (!this.waitingPeriodEnabled) {
       return;
     }
@@ -125,7 +144,7 @@ module.exports = class Meter {
     this.tokenEntryLockedUntil = Date.now() + minutes * 60 * 1000;
   }
 
-  #updateUsedCounts(tokenValue, newCount, tokenType) {
+  #updateUsedCounts(tokenValue: number, newCount: number, tokenType: TokenType): void {
     let highestCount = Math.max(...this.usedCounts, 0);
 
     if (newCount > highestCount) {
@@ -133,7 +152,7 @@ module.exports = class Meter {
     }
 
     const bottomRange = highestCount - MAX_UNUSED_OLDER_TOKENS;
-    const newUsedCounts = [];
+    const newUsedCounts: number[] = [];
 
     if (
       tokenType !== TOKEN_TYPE_ADD_TIME ||
@@ -155,7 +174,7 @@ module.exports = class Meter {
     this.usedCounts = newUsedCounts;
   }
 
-  #updateMeterStatus(tokenValue, tokenType) {
+  #updateMeterStatus(tokenValue: number, tokenType: TokenType): void {
     if (tokenValue <= MAX_ACTIVATION_VALUE) {
       if (!this.paygEnabled && tokenType === TOKEN_TYPE_SET_TIME) {
         this.paygEnabled = true;
@@ -174,7 +193,7 @@ module.exports = class Meter {
     }
   }
 
-  #updateMeterExpirationDate(tokenValue, tokenType) {
+  #updateMeterExpirationDate(tokenValue: number, tokenType: TokenType): void {
     const now = Date.now();
     const numDays = tokenValue / this.timeDivider;
     const msToAdd = numDays * 24 * 60 * 60 * 1000;
@@ -186,4 +205,4 @@ module.exports = class Meter {
         this.expirationDate < now ? now + msToAdd : this.expirationDate + msToAdd;
     }
   }
-};
+}

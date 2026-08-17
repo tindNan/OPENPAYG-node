@@ -1,7 +1,8 @@
-const siphash = require("siphash");
-const { convertTo30Bits, convertTo40Bits } = require("./utils");
+import siphash from "siphash";
+import { convertTo30Bits, convertTo40Bits } from "./utils.ts";
+import type { SipHashKey } from "./constants.ts";
 
-function generateNextToken(currentToken, key) {
+export function generateNextToken(currentToken: number, key: SipHashKey): number {
   const buf = new ArrayBuffer(8);
   const view = new DataView(buf);
   view.setUint32(0, currentToken, false);
@@ -26,7 +27,7 @@ function generateNextToken(currentToken, key) {
   return convertTo30Bits(res);
 }
 
-function generateNextExtendedToken(currentToken, key) {
+export function generateNextExtendedToken(currentToken: number, key: SipHashKey): number {
   const buf = new ArrayBuffer(8);
   const view = new DataView(buf);
   view.setBigUint64(0, BigInt(currentToken), false);
@@ -38,8 +39,3 @@ function generateNextExtendedToken(currentToken, key) {
 
   return convertTo40Bits(fullHash);
 }
-
-module.exports = {
-  generateNextToken,
-  generateNextExtendedToken,
-};

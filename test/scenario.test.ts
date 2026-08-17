@@ -1,7 +1,7 @@
-const { test, describe } = require("node:test");
-const assert = require("node:assert");
+import { test, describe } from "node:test";
+import assert from "node:assert";
 
-const { Server, Meter, decodeExtendedToken, keyFromHex, constants } = require("..");
+import { Server, Meter, decodeExtendedToken, keyFromHex, constants } from "../src/index.ts";
 
 // end-to-end scenarios: a server and a meter sharing only the key and starting
 // code, exercising the full lifecycle the way a real deployment would
@@ -11,11 +11,11 @@ const EXT_STARTING_CODE = 123456789123;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function daysLeft(meter) {
+function daysLeft(meter: Meter): number {
   return (meter.expirationDate - Date.now()) / DAY_MS;
 }
 
-function assertDays(meter, expected) {
+function assertDays(meter: Meter, expected: number) {
   const days = daysLeft(meter);
   assert.ok(
     days > expected - 0.01 && days <= expected,
@@ -120,6 +120,7 @@ describe("scenario: extended tokens", () => {
       const token = server.generateExtendedTokenForValue(value);
       const r = decodeExtendedToken({ token, key, startingCode: EXT_STARTING_CODE, lastCount });
       assert.strictEqual(r.value, value);
+      assert.ok(r.count !== null);
       lastCount = r.count;
     }
   });

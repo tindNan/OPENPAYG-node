@@ -1,19 +1,19 @@
-const { test, describe } = require("node:test");
-const assert = require("node:assert");
+import { test, describe } from "node:test";
+import assert from "node:assert";
 
-const { encode, encodeExtended } = require("../src/encode");
-const { decode, decodeExtended } = require("../src/decode");
-const {
+import { encode, encodeExtended } from "../src/encode.ts";
+import { decode, decodeExtended } from "../src/decode.ts";
+import {
   encodeBase,
   decodeBase,
   encodeExtendedBase,
   decodeExtendedBase,
   convertTo4DigitToken,
   convertFrom4DigitToken,
-} = require("../src/utils");
-const { TOKEN_TYPE_ADD_TIME, TOKEN_TYPE_SET_TIME } = require("../src/constants");
-const Meter = require("../src/Meter");
-const Server = require("../src/Server");
+} from "../src/utils.ts";
+import { TOKEN_TYPE_ADD_TIME, TOKEN_TYPE_SET_TIME, type TokenType } from "../src/constants.ts";
+import { Meter } from "../src/Meter.ts";
+import { Server } from "../src/Server.ts";
 
 // official test key from the OpenPAYGO example implementation documentation (scenario 1)
 // bytes: a2 9a b8 2e dc 5f bb c4 1e c9 53 0f 6d ac 86 b1 as 4 little-endian uint32
@@ -21,7 +21,7 @@ const TEST_KEY = [0x2eb89aa2, 0xc4bb5fdc, 0x0f53c91e, 0xb186ac6d];
 const TEST_STARTING_CODE = 123456789;
 
 // official scenario 1 vectors: (value, mode) -> expected token, starting from count 0
-const OFFICIAL_VECTORS = [
+const OFFICIAL_VECTORS: { value: number; mode: TokenType; token: string }[] = [
   { value: 1, mode: TOKEN_TYPE_ADD_TIME, token: "662486790" },
   { value: 29, mode: TOKEN_TYPE_ADD_TIME, token: "927706818" },
   { value: 7, mode: TOKEN_TYPE_SET_TIME, token: "942433796" },
@@ -63,11 +63,12 @@ describe("standard 9 digit tokens (official vectors)", () => {
 
   test("decode recovers value, count and type from official tokens", () => {
     let deviceCount = 0;
-    const usedCounts = [];
+    const usedCounts: number[] = [];
     for (const v of OFFICIAL_VECTORS) {
       const r = decode(v.token, TEST_STARTING_CODE, TEST_KEY, deviceCount, usedCounts);
       assert.strictEqual(r.value, v.value);
       assert.strictEqual(r.type, v.mode);
+      assert.ok(r.count !== null);
       deviceCount = r.count;
       usedCounts.push(r.count);
     }
@@ -77,6 +78,7 @@ describe("standard 9 digit tokens (official vectors)", () => {
     const { finalToken } = encode(TEST_KEY, TEST_STARTING_CODE, 1, 0, TOKEN_TYPE_ADD_TIME);
     const first = decode(finalToken, TEST_STARTING_CODE, TEST_KEY, 0, []);
     assert.strictEqual(first.value, 1);
+    assert.ok(first.count !== null);
     const replay = decode(finalToken, TEST_STARTING_CODE, TEST_KEY, first.count, [first.count]);
     assert.strictEqual(replay.value, -2);
   });
@@ -93,6 +95,7 @@ describe("standard 9 digit tokens (official vectors)", () => {
     // enter the second token first
     const r2 = decode(second.finalToken, TEST_STARTING_CODE, TEST_KEY, 0, []);
     assert.strictEqual(r2.value, 2);
+    assert.ok(r2.count !== null);
     // the older, unused add-time token is still accepted
     const r1 = decode(first.finalToken, TEST_STARTING_CODE, TEST_KEY, r2.count, [r2.count]);
     assert.strictEqual(r1.value, 1);
@@ -116,6 +119,7 @@ describe("extended 12 digit tokens", () => {
       serverCount = newCount;
       const r = decodeExtended(finalToken, EXT_STARTING_CODE, TEST_KEY, deviceCount);
       assert.strictEqual(r.value, value);
+      assert.ok(r.count !== null);
       deviceCount = r.count;
     }
   });
@@ -129,6 +133,7 @@ describe("extended 12 digit tokens", () => {
     const { finalToken } = encodeExtended(TEST_KEY, EXT_STARTING_CODE, 42, 0);
     const first = decodeExtended(finalToken, EXT_STARTING_CODE, TEST_KEY, 0);
     assert.strictEqual(first.value, 42);
+    assert.ok(first.count !== null);
     const replay = decodeExtended(finalToken, EXT_STARTING_CODE, TEST_KEY, first.count);
     assert.strictEqual(replay.value, null);
   });

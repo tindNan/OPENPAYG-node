@@ -1,7 +1,9 @@
-const { encode, encodeExtended } = require("./encode");
-const { convertTo4DigitToken } = require("./utils");
+import { debuglog } from "node:util";
 
-const {
+import { encode, encodeExtended } from "./encode.ts";
+import { convertTo4DigitToken } from "./utils.ts";
+
+import {
   KEY,
   MAX_ACTIVATION_VALUE,
   EXTENDED_MAX_ACTIVATION_VALUE,
@@ -10,21 +12,37 @@ const {
   TOKEN_TYPE_ADD_TIME,
   STARTING_CODE,
   STARTING_COUNT,
-} = require("./constants");
+  type Logger,
+  type SipHashKey,
+  type TokenType,
+} from "./constants.ts";
 
-const { debuglog } = require("node:util");
-
-module.exports = class Server {
+export interface ServerOptions {
+  /** the device's 9 digit starting code, defaults to 123456789 */
+  startingCode?: number;
+  /** siphash key (4 x uint32), see keyFromHex */
+  key?: SipHashKey;
+  /** starting count for the # of tokens */
+  startingCount?: number;
+  /** time divider (check OPENPAYG documentation) */
+  timeDivider?: number;
+  /** emit tokens using only digits 1-4, 15/20 digits long (default false) */
+  restrictedDigitSet?: boolean;
   /**
-   * @param {object} [options]
-   * @param {number} [options.startingCode] - the device's 9 digit starting code, defaults to 123456789
-   * @param {Uint32Array|number[]} [options.key] - siphash key (4 x uint32), see keyFromHex
-   * @param {number} [options.startingCount] - starting count for the # of tokens
-   * @param {number} [options.timeDivider] - time divider (check OPENPAYG documentation)
-   * @param {boolean} [options.restrictedDigitSet=false] - emit tokens using only digits 1-4 (15/20 digits long)
-   * @param {function} [options.logger] - log sink (e.g. console.log or a pino method);
-   *   defaults to util.debuglog, enabled by running with NODE_DEBUG=openpaygo
+   * log sink (e.g. console.log or a pino method);
+   * defaults to util.debuglog, enabled by running with NODE_DEBUG=openpaygo
    */
+  logger?: Logger;
+}
+
+export class Server {
+  startingCode: number;
+  key: SipHashKey;
+  count: number;
+  timeDivider: number;
+  restrictedDigitSet: boolean;
+  logger: Logger;
+
   constructor({
     startingCode = STARTING_CODE,
     key = KEY,
@@ -32,7 +50,7 @@ module.exports = class Server {
     timeDivider = 1,
     restrictedDigitSet = false,
     logger = debuglog("openpaygo"),
-  } = {}) {
+  }: ServerOptions = {}) {
     this.logger = logger;
     this.startingCode = startingCode;
     this.key = key;
@@ -42,14 +60,13 @@ module.exports = class Server {
   }
 
   /**
-   * @param {number} value - number of days to encode (0-995), or 998 to disable PAYG,
+   * @param value - number of days to encode (0-995), or 998 to disable PAYG,
    *   or 999 for counter synchronisation. 996 and 997 are reserved by the spec.
    *   If timeDivider is > 1 then refer to OPENPAYG documentation
-   * @param {(TOKEN_TYPE_ADD_TIME|TOKEN_TYPE_SET_TIME)} [mode=TOKEN_TYPE_ADD_TIME] - if token is add time or set time
-   *
-   * @return {string} the 9 digit token (15 digits in restricted digit set mode)
+   * @param mode - whether the token is add time or set time
+   * @returns the 9 digit token (15 digits in restricted digit set mode)
    */
-  generateTokenForValue(value, mode = TOKEN_TYPE_ADD_TIME) {
+  generateTokenForValue(value: number, mode: TokenType = TOKEN_TYPE_ADD_TIME): string {
     if (
       !Number.isInteger(value) ||
       (value > MAX_ACTIVATION_VALUE &&
@@ -74,12 +91,11 @@ module.exports = class Server {
   }
 
   /**
-   * @param {number} value - value to encode (0-999999), extended tokens carry
+   * @param value - value to encode (0-999999), extended tokens carry
    *   device-specific data and have no add/set time modes
-   *
-   * @return {string} the 12 digit token (20 digits in restricted digit set mode)
+   * @returns the 12 digit token (20 digits in restricted digit set mode)
    */
-  generateExtendedTokenForValue(value) {
+  generateExtendedTokenForValue(value: number): string {
     if (!Number.isInteger(value) || value < 0 || value > EXTENDED_MAX_ACTIVATION_VALUE) {
       throw Error(`INVALID VALUE: must be 0-${EXTENDED_MAX_ACTIVATION_VALUE}`);
     }
@@ -91,4 +107,4 @@ module.exports = class Server {
 
     return this.restrictedDigitSet ? convertTo4DigitToken(Number(finalToken), 40) : finalToken;
   }
-};
+}
