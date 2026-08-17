@@ -6,9 +6,12 @@ In case of anything please feel free to open an issue.
 ## USAGE
 
 ```sh
-node simulation.js <number of tokens to generate>   # server -> meter round trip demo
-npm test                                            # runs the spec test vectors (node:test, Node 18+)
+npm test                          # spec test vectors + end-to-end scenarios (node:test)
+NODE_DEBUG=openpaygo npm test     # same, with the meter/server internal decisions logged
 ```
+
+The end-to-end server -> meter flows (purchases, replays, corrections, counter
+resync, extended tokens) live in `test/scenario.test.js`.
 
 ## USAGE AS A LIBRARY
 

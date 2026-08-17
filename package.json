@@ -15,7 +15,6 @@
     ".": "./index.js"
   },
   "scripts": {
-    "start": "node simulation.js",
     "test": "node --test",
     "lint": "oxlint",
     "fmt": "oxfmt",
