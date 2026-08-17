@@ -57,10 +57,45 @@ function decodeBase (startingCodeBase, tokenBase) {
     : decodedValue;
 }
 
+function decodeExtendedBase (startingCodeBase, tokenBase) {
+  const decodedValue = tokenBase - startingCodeBase;
+
+  return decodedValue < 0
+    ? decodedValue + 1000000
+    : decodedValue;
+}
+
+// restricted digit set mode: represent the token 2 bits at a time,
+// each pair becoming a digit between 1 and 4 (30 bits -> 15 digits, 40 bits -> 20 digits)
+function convertTo4DigitToken (token, bits) {
+  const source = BigInt(token);
+  let restricted = '';
+
+  for (let i = bits - 2; i >= 0; i -= 2) {
+    const pair = Number((source >> BigInt(i)) & 0b11n);
+    restricted += String(pair + 1);
+  }
+
+  return restricted;
+}
+
+function convertFrom4DigitToken (token) {
+  let result = 0n;
+
+  for (const digit of String(token)) {
+    result = (result << 2n) | BigInt(Number(digit) - 1);
+  }
+
+  return Number(result);
+}
+
 module.exports = {
   convertTo30Bits,
   convertTo40Bits,
+  convertTo4DigitToken,
+  convertFrom4DigitToken,
   decodeBase,
+  decodeExtendedBase,
   encodeBase,
   encodeExtendedBase,
   getTokenBase,

@@ -29,14 +29,14 @@ function generateNextToken (currentToken, key) {
 function generateNextExtendedToken (currentToken, key) {
   const buf = new ArrayBuffer(8);
   const view = new DataView(buf);
-  view.setBigInt64(0, BigInt(currentToken), false);
+  view.setBigUint64(0, BigInt(currentToken), false);
 
   const msgBuffer = new Uint8Array(view.buffer);
 
   const { l: low, h: high } = siphash.hash(key, msgBuffer);
-  const bigIntFromBinary = BigInt(`0b${high.toString(2)}${low.toString(2).padStart(32, '0')}`);
+  const fullHash = (BigInt(high >>> 0) << 32n) | BigInt(low >>> 0);
 
-  return convertTo40Bits(bigIntFromBinary);
+  return convertTo40Bits(fullHash);
 }
 
 module.exports = {

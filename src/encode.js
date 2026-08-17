@@ -22,12 +22,14 @@ function encode (key, startingCode, value, count, mode) {
   return { newCount, finalToken };
 }
 
-function encodeExtended (key, startingCode, value, count, mode) {
+// the extended (12 digit) scheme has no ADD_TIME/SET_TIME modes,
+// the count simply increments by 1 for each token generated
+function encodeExtended (key, startingCode, value, count) {
   const startingCodeBase = getExtendedTokenBase(startingCode);
   const tokenBase = encodeExtendedBase(startingCodeBase, value);
   let currentToken = putBaseInExtendedToken(startingCode, tokenBase);
 
-  const newCount = getNextCount(count, mode);
+  const newCount = count + 1;
 
   for (let xn = 0; xn < newCount; xn++) {
     currentToken = generateNextExtendedToken(currentToken, key);
