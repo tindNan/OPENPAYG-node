@@ -12,23 +12,27 @@ const {
   STARTING_COUNT,
 } = require("./src/constants");
 
+const { debuglog } = require("node:util");
+
 module.exports = class Server {
   /**
-   * @param {number} startingCode - starting code for the meter, defaults to 123456789
-   * @param {Uint32Array|number[]} key - siphash key (4 x uint32)
-   * @param {number} startingCount - starting count for the # of tokens
-   * @param {number} timeDivider - time divider (check OPENPAYG documentation)
-   * @param {boolean} restrictedDigitSet - emit tokens using only digits 1-4 (15/20 digits long)
-   * @param {function} logger - optional log sink (e.g. console.log), silent by default
+   * @param {object} [options]
+   * @param {number} [options.startingCode] - the device's 9 digit starting code, defaults to 123456789
+   * @param {Uint32Array|number[]} [options.key] - siphash key (4 x uint32), see keyFromHex
+   * @param {number} [options.startingCount] - starting count for the # of tokens
+   * @param {number} [options.timeDivider] - time divider (check OPENPAYG documentation)
+   * @param {boolean} [options.restrictedDigitSet=false] - emit tokens using only digits 1-4 (15/20 digits long)
+   * @param {function} [options.logger] - log sink (e.g. console.log or a pino method);
+   *   defaults to util.debuglog, enabled by running with NODE_DEBUG=openpaygo
    */
-  constructor(
+  constructor({
     startingCode = STARTING_CODE,
     key = KEY,
     startingCount = STARTING_COUNT,
     timeDivider = 1,
     restrictedDigitSet = false,
-    logger = () => {},
-  ) {
+    logger = debuglog("openpaygo"),
+  } = {}) {
     this.logger = logger;
     this.startingCode = startingCode;
     this.key = key;

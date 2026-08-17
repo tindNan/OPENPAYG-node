@@ -150,8 +150,18 @@ describe("restricted digit set mode", () => {
   });
 
   test("server and meter interoperate in restricted digit mode", () => {
-    const server = new Server(TEST_STARTING_CODE, TEST_KEY, 0, 1, true);
-    const meter = new Meter(TEST_STARTING_CODE, TEST_KEY, 0, 1, true, true);
+    const server = new Server({
+      startingCode: TEST_STARTING_CODE,
+      key: TEST_KEY,
+      startingCount: 0,
+      restrictedDigitSet: true,
+    });
+    const meter = new Meter({
+      startingCode: TEST_STARTING_CODE,
+      key: TEST_KEY,
+      startingCount: 0,
+      restrictedDigitSet: true,
+    });
     const token = server.generateTokenForValue(3, TOKEN_TYPE_ADD_TIME);
     assert.strictEqual(token.length, 15);
     assert.match(token, /^[1-4]+$/);
@@ -162,7 +172,7 @@ describe("restricted digit set mode", () => {
 
 describe("Meter", () => {
   test("processes the official token sequence and tracks state", () => {
-    const meter = new Meter(TEST_STARTING_CODE, TEST_KEY, 0);
+    const meter = new Meter({ startingCode: TEST_STARTING_CODE, key: TEST_KEY, startingCount: 0 });
     const r1 = meter.enterToken("662486790"); // 1 day ADD_TIME
     assert.strictEqual(r1.value, 1);
     assert.strictEqual(meter.count, 2);
@@ -179,7 +189,7 @@ describe("Meter", () => {
   });
 
   test("does not add time twice for a replayed token", () => {
-    const meter = new Meter(TEST_STARTING_CODE, TEST_KEY, 0);
+    const meter = new Meter({ startingCode: TEST_STARTING_CODE, key: TEST_KEY, startingCount: 0 });
     meter.enterToken("662486790");
     const expiration = meter.expirationDate;
     const replay = meter.enterToken("662486790");
@@ -188,7 +198,7 @@ describe("Meter", () => {
   });
 
   test("locks token entry after an invalid token when waiting period is enabled", () => {
-    const meter = new Meter(TEST_STARTING_CODE, TEST_KEY, 0);
+    const meter = new Meter({ startingCode: TEST_STARTING_CODE, key: TEST_KEY, startingCount: 0 });
     meter.enterToken("111111111"); // invalid
     assert.strictEqual(meter.invalidTokenCount, 1);
     assert.ok(meter.tokenEntryLockedUntil > Date.now());
@@ -204,7 +214,7 @@ describe("Meter", () => {
   });
 
   test("waiting period doubles per invalid entry and caps at 512 minutes", () => {
-    const meter = new Meter(TEST_STARTING_CODE, TEST_KEY, 0);
+    const meter = new Meter({ startingCode: TEST_STARTING_CODE, key: TEST_KEY, startingCount: 0 });
     for (let i = 1; i <= 11; i++) {
       meter.tokenEntryLockedUntil = 0; // simulate expiry between attempts
       const before = Date.now();
@@ -219,7 +229,12 @@ describe("Meter", () => {
   });
 
   test("does not lock when waiting period is disabled", () => {
-    const meter = new Meter(TEST_STARTING_CODE, TEST_KEY, 0, 1, false);
+    const meter = new Meter({
+      startingCode: TEST_STARTING_CODE,
+      key: TEST_KEY,
+      startingCount: 0,
+      waitingPeriodEnabled: false,
+    });
     meter.enterToken("111111111");
     const r = meter.enterToken("662486790");
     assert.strictEqual(r.value, 1);
@@ -228,7 +243,11 @@ describe("Meter", () => {
 
 describe("Server", () => {
   test("rejects reserved and out-of-range values", () => {
-    const server = new Server(TEST_STARTING_CODE, TEST_KEY, 0);
+    const server = new Server({
+      startingCode: TEST_STARTING_CODE,
+      key: TEST_KEY,
+      startingCount: 0,
+    });
     assert.throws(() => server.generateTokenForValue(996));
     assert.throws(() => server.generateTokenForValue(997));
     assert.throws(() => server.generateTokenForValue(1000));
@@ -237,7 +256,11 @@ describe("Server", () => {
   });
 
   test("generates the official tokens in sequence", () => {
-    const server = new Server(TEST_STARTING_CODE, TEST_KEY, 0);
+    const server = new Server({
+      startingCode: TEST_STARTING_CODE,
+      key: TEST_KEY,
+      startingCount: 0,
+    });
     for (const v of OFFICIAL_VECTORS) {
       assert.strictEqual(server.generateTokenForValue(v.value, v.mode), v.token);
     }

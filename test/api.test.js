@@ -104,8 +104,13 @@ describe("public API", () => {
   test("classes are silent by default and accept a logger", () => {
     const key = keyFromHex(OFFICIAL_KEY_HEX);
     const messages = [];
-    const silent = new Server(STARTING_CODE, key, 0);
-    const chatty = new Server(STARTING_CODE, key, 0, 1, false, (msg) => messages.push(msg));
+    const silent = new Server({ startingCode: STARTING_CODE, key, startingCount: 0 });
+    const chatty = new Server({
+      startingCode: STARTING_CODE,
+      key,
+      startingCount: 0,
+      logger: (msg) => messages.push(msg),
+    });
     silent.generateTokenForValue(1);
     assert.strictEqual(messages.length, 0);
     chatty.generateTokenForValue(1);
@@ -114,8 +119,8 @@ describe("public API", () => {
 
   test("Server and Meter interoperate through the public entry point", () => {
     const key = keyFromHex(OFFICIAL_KEY_HEX);
-    const server = new Server(STARTING_CODE, key, 0);
-    const meter = new Meter(STARTING_CODE, key, 0);
+    const server = new Server({ startingCode: STARTING_CODE, key, startingCount: 0 });
+    const meter = new Meter({ startingCode: STARTING_CODE, key, startingCount: 0 });
     const token = server.generateTokenForValue(5, constants.TOKEN_TYPE_SET_TIME);
     const r = meter.enterToken(token);
     assert.strictEqual(r.value, 5);

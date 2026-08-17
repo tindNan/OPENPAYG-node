@@ -50,16 +50,22 @@ const { value, count, type } = decodeToken({
 const { Server, Meter, keyFromHex } = require("openpayg-token-node");
 
 const key = keyFromHex("a29ab82edc5fbbc41ec9530f6dac86b1");
-const server = new Server(123456789, key, 0);
-const meter = new Meter(123456789, key, 0); // tracks count, used counts, PAYG state,
-// waiting period after invalid tokens
+const server = new Server({ startingCode: 123456789, key, startingCount: 0 });
+// Meter tracks count, used counts, PAYG state and the waiting period after invalid tokens
+const meter = new Meter({ startingCode: 123456789, key, startingCount: 0 });
 
 const token = server.generateTokenForValue(30);
 const { value } = meter.enterToken(token);
 ```
 
-Both classes are silent by default; pass a logger (e.g. `console.log`) as the last
-constructor argument to see the internal decisions.
+Both classes are silent by default. Their internal decisions are logged through
+`util.debuglog`, so run with `NODE_DEBUG=openpaygo` to see them — or pass your own
+sink via the `logger` option (`console.log`, a pino method, etc.):
+
+```js
+const pino = require("pino")();
+const meter = new Meter({ startingCode: 123456789, key, logger: (msg) => pino.debug(msg) });
+```
 
 ## REFERENCE DOCUMENTATION
 

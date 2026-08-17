@@ -11,6 +11,8 @@ const {
   TIME_DIVIDER,
 } = require("./src/constants");
 
+const { debuglog } = require("node:util");
+
 const { decode } = require("./src/decode");
 const { convertFrom4DigitToken } = require("./src/utils");
 
@@ -19,15 +21,26 @@ const WAITING_PERIOD_BASE_MINUTES = 1;
 const WAITING_PERIOD_MAX_MINUTES = 512;
 
 module.exports = class Meter {
-  constructor(
+  /**
+   * @param {object} [options]
+   * @param {number} [options.startingCode] - the device's 9 digit starting code
+   * @param {Uint32Array|number[]} [options.key] - siphash key (4 x uint32), see keyFromHex
+   * @param {number} [options.startingCount] - the device's initial token count
+   * @param {number} [options.timeDivider] - division factor applied to activation values
+   * @param {boolean} [options.waitingPeriodEnabled=true] - lock token entry after invalid tokens
+   * @param {boolean} [options.restrictedDigitSet=false] - tokens are entered using only digits 1-4
+   * @param {function} [options.logger] - log sink (e.g. console.log or a pino method);
+   *   defaults to util.debuglog, enabled by running with NODE_DEBUG=openpaygo
+   */
+  constructor({
     startingCode = STARTING_CODE,
     key = KEY,
     startingCount = STARTING_COUNT,
     timeDivider = TIME_DIVIDER,
     waitingPeriodEnabled = true,
     restrictedDigitSet = false,
-    logger = () => {},
-  ) {
+    logger = debuglog("openpaygo"),
+  } = {}) {
     this.logger = logger;
     this.startingCode = startingCode;
     this.key = key;
