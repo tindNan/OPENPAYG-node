@@ -7,18 +7,25 @@ const {
   TOKEN_TYPE_ADD_TIME,
   PAYG_DISABLE_VALUE,
   MAX_ACTIVATION_VALUE,
-  TOKEN_TYPE_SET_TIME
-} = require('./constants');
+  TOKEN_TYPE_SET_TIME,
+  TIME_DIVIDER
+} = require('./src/constants');
 
-const decode = require('./decode');
+const { decode } = require('./src/decode');
+const { convertFrom4DigitToken } = require('./src/utils');
+
+// waiting period after invalid tokens: 1 minute doubling up to 512 minutes (~8h)
+const WAITING_PERIOD_BASE_MINUTES = 1;
+const WAITING_PERIOD_MAX_MINUTES = 512;
 
 module.exports = class Meter {
   constructor (
     startingCode = STARTING_CODE,
     key = KEY,
     startingCount = STARTING_COUNT,
-    timeDivider,
-    waitingPeriodEnabled = true
+    timeDivider = TIME_DIVIDER,
+    waitingPeriodEnabled = true,
+    restrictedDigitSet = false
   ) {
     this.startingCode = startingCode;
     this.key = key;
@@ -28,10 +35,22 @@ module.exports = class Meter {
     this.usedCounts = [];
     this.count = startingCount;
     this.waitingPeriodEnabled = waitingPeriodEnabled;
+    this.restrictedDigitSet = restrictedDigitSet;
+    this.tokenEntryLockedUntil = 0; // UNIX ms until which token entry is refused
     this.expirationDate = Date.now(); // use UNIX milliseconds
   }
 
   enterToken (token) {
+    if (this.#isLocked()) {
+      const minutesLeft = Math.ceil((this.tokenEntryLockedUntil - Date.now()) / 60000);
+      console.log(`TOKEN ENTRY LOCKED, TRY AGAIN IN ${minutesLeft} MINUTE(S)`);
+      return { value: null, count: null, type: null };
+    }
+
+    if (this.restrictedDigitSet) {
+      token = convertFrom4DigitToken(token);
+    }
+
     const { value, count, type } = decode(token, this.startingCode, this.key, this.count, this.usedCounts);
     const isValidToken = this.#isValidToken(value);
 
@@ -45,7 +64,9 @@ module.exports = class Meter {
 
     this.#updateUsedCounts(value, count, type);
     this.invalidTokenCount = 0;
+    this.tokenEntryLockedUntil = 0;
     this.#updateMeterStatus(value, type);
+    return { value, count, type };
   }
 
   printStatus () {
@@ -54,14 +75,17 @@ module.exports = class Meter {
     console.log('PAYG Enabled: ', this.paygEnabled);
   }
 
+  #isLocked () {
+    return this.waitingPeriodEnabled && Date.now() < this.tokenEntryLockedUntil;
+  }
+
   #isValidToken (tokenValue) {
     console.log('processing decoded token');
     // there could be value = 0, so can't use value
     if (tokenValue === null) {
       console.log('TOKEN INVALID');
       this.invalidTokenCount++;
-      // add an invalid token count (review documentation why this is necessary)
-      // you can also block further token entry
+      this.#startWaitingPeriod();
       return false;
     }
 
@@ -72,6 +96,18 @@ module.exports = class Meter {
 
     console.log('VALID TOKEN');
     return true;
+  }
+
+  #startWaitingPeriod () {
+    if (!this.waitingPeriodEnabled) {
+      return;
+    }
+
+    const minutes = Math.min(
+      WAITING_PERIOD_BASE_MINUTES * 2 ** (this.invalidTokenCount - 1),
+      WAITING_PERIOD_MAX_MINUTES
+    );
+    this.tokenEntryLockedUntil = Date.now() + minutes * 60 * 1000;
   }
 
   #updateUsedCounts (tokenValue, newCount, tokenType) {
@@ -110,18 +146,18 @@ module.exports = class Meter {
       }
     } else if (tokenValue === PAYG_DISABLE_VALUE) {
       this.paygEnabled = false;
-    } else if (tokenValue !== COUNTER_SYNC_VALUE) {
+    } else if (tokenValue === COUNTER_SYNC_VALUE) {
+      // count was already synced in enterToken
       console.log('METER COUNTER SYNCED');
     } else {
-      console.log('UNKOWN VALUE, COULD NOT UPDATE METER');
+      // values 996 and 997 are reserved for future extensions
+      console.log('RESERVED VALUE, NO STATUS CHANGE');
     }
   }
 
   #updateMeterExpirationDate (tokenValue, tokenType) {
-    console.log('tokenValue: ', tokenValue);
     const now = Date.now();
     const numDays = tokenValue / this.timeDivider;
-    console.log(numDays);
     const msToAdd = numDays * 24 * 60 * 60 * 1000;
 
     if (tokenType === TOKEN_TYPE_SET_TIME) {
