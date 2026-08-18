@@ -1,7 +1,6 @@
 import { debuglog } from "node:util";
 
 import {
-  STARTING_CODE,
   STARTING_COUNT,
   KEY,
   COUNTER_SYNC_VALUE,
@@ -17,6 +16,7 @@ import {
 } from "./constants.ts";
 
 import { decode, type DecodeResult } from "./decode.ts";
+import { generateStartingCode } from "./generateNextToken.ts";
 import { convertFrom4DigitToken } from "./utils.ts";
 
 // waiting period after invalid tokens: 1 minute doubling up to 512 minutes (~8h)
@@ -24,7 +24,7 @@ const WAITING_PERIOD_BASE_MINUTES = 1;
 const WAITING_PERIOD_MAX_MINUTES = 512;
 
 export interface MeterOptions {
-  /** the device's 9 digit starting code */
+  /** the device's 9 digit starting code; derived from the key if omitted */
   startingCode?: number;
   /** siphash key (4 x uint32), see keyFromHex */
   key?: SipHashKey;
@@ -60,8 +60,8 @@ export class Meter {
   logger: Logger;
 
   constructor({
-    startingCode = STARTING_CODE,
     key = KEY,
+    startingCode = generateStartingCode(key),
     startingCount = STARTING_COUNT,
     timeDivider = TIME_DIVIDER,
     waitingPeriodEnabled = true,

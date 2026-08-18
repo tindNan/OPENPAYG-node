@@ -8,6 +8,7 @@ import {
   generateExtendedToken,
   decodeToken,
   decodeExtendedToken,
+  generateStartingCode,
   keyFromHex,
   keyFromString16,
   constants,
@@ -97,9 +98,57 @@ describe("public API", () => {
       count: 0,
     });
     assert.strictEqual(token.length, 12);
-    assert.strictEqual(newCount, 1);
+    assert.strictEqual(newCount, 2); // add time tokens sit on even counts
     const r = decodeExtendedToken({ token, key, startingCode: EXT_STARTING_CODE, lastCount: 0 });
     assert.strictEqual(r.value, 123456);
+    assert.strictEqual(r.type, constants.TOKEN_TYPE_ADD_TIME);
+  });
+
+  test("generateStartingCode derives a deterministic 9 digit code from the key", () => {
+    const key = keyFromHex(OFFICIAL_KEY_HEX);
+    const code = generateStartingCode(key);
+    assert.strictEqual(code, generateStartingCode(keyFromHex(OFFICIAL_KEY_HEX)));
+    assert.ok(Number.isInteger(code) && code >= 0 && code <= 999999999);
+    // wrappers derive the same starting code when none is given
+    const { token } = generateToken({ key, value: 1, count: 0 });
+    const r = decodeToken({ token, key, lastCount: 0 });
+    assert.strictEqual(r.value, 1);
+  });
+
+  test("valueDivider scales values on both sides", () => {
+    const key = keyFromHex(OFFICIAL_KEY_HEX);
+    // divider 4: units are quarter days; 5.5 days -> raw value 22
+    const { token } = generateToken({
+      key,
+      startingCode: STARTING_CODE,
+      value: 5.5,
+      count: 0,
+      valueDivider: 4,
+    });
+    const r = decodeToken({
+      token,
+      key,
+      startingCode: STARTING_CODE,
+      lastCount: 0,
+      valueDivider: 4,
+    });
+    assert.strictEqual(r.value, 5.5);
+    // reserved values are not scaled
+    const disable = generateToken({
+      key,
+      startingCode: STARTING_CODE,
+      value: constants.PAYG_DISABLE_VALUE,
+      count: 0,
+      valueDivider: 4,
+    });
+    const d = decodeToken({
+      token: disable.token,
+      key,
+      startingCode: STARTING_CODE,
+      lastCount: 0,
+      valueDivider: 4,
+    });
+    assert.strictEqual(d.value, constants.PAYG_DISABLE_VALUE);
   });
 
   test("classes are silent by default and accept a logger", () => {

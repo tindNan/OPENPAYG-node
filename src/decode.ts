@@ -27,7 +27,9 @@ export type DecodeResult =
   | { value: number; count: number; type: TokenType }
   | { value: -2 | null; count: null; type: null };
 
-export type DecodeExtendedResult = { value: number; count: number } | { value: null; count: null };
+export type DecodeExtendedResult =
+  | { value: number; count: number; type: TokenType }
+  | { value: -2 | null; count: null; type: null };
 
 export function decode(
   token: string | number,
@@ -78,15 +80,19 @@ export function decode(
   return { value: null, count: null, type: null };
 }
 
-// the extended (12 digit) scheme has no ADD_TIME/SET_TIME modes,
-// counts simply increment by 1 for each token generated
+// extended (12 digit) tokens follow the same parity-based count scheme and
+// replay protection as standard tokens (current OpenPAYGO ecosystem behaviour)
 export function decodeExtended(
   token: string | number,
   startingCode: number,
   key: SipHashKey,
   lastCount: number,
+  usedCounts: readonly number[] = [],
 ): DecodeExtendedResult {
   const numericToken = Number(token);
+
+  let validOlderToken = false;
+
   const tokenBase = getExtendedTokenBase(numericToken);
   let currentCode = putBaseInExtendedToken(startingCode, tokenBase);
   const startingCodeBase = getExtendedTokenBase(startingCode);
@@ -98,14 +104,24 @@ export function decodeExtended(
   for (let count = 0; count < maxAttempts; count++) {
     const maskedToken = putBaseInExtendedToken(currentCode, tokenBase);
 
-    if (maskedToken === numericToken && count > lastCount) {
-      return { value, count };
+    const type: TokenType = count % 2 ? TOKEN_TYPE_SET_TIME : TOKEN_TYPE_ADD_TIME;
+
+    if (maskedToken === numericToken) {
+      if (countIsValid(count, lastCount, value, type, usedCounts)) {
+        return { value, count, type };
+      } else {
+        validOlderToken = true;
+      }
     }
 
     currentCode = generateNextExtendedToken(currentCode, key);
   }
 
-  return { value: null, count: null };
+  if (validOlderToken) {
+    return { value: -2, count: null, type: null };
+  }
+
+  return { value: null, count: null, type: null };
 }
 
 function countIsValid(
@@ -116,7 +132,7 @@ function countIsValid(
   usedCounts: readonly number[],
 ): boolean {
   if (value === COUNTER_SYNC_VALUE) {
-    if (count > lastCount - 30) {
+    if (count > lastCount - MAX_TOKEN_JUMP) {
       return true;
     }
   } else if (count > lastCount) {

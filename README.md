@@ -81,23 +81,38 @@ const meter = new Meter({ startingCode: 123456789, key, logger: (msg) => log.deb
 
 ## REFERENCE DOCUMENTATION
 
-1. [OPENPAYG Token general documentation](https://github.com/EnAccess/OpenPAYGO/blob/master/documentation/general_documentation.pdf)
-2. [OPENPAYG Token example documentation](https://github.com/EnAccess/OpenPAYGO-Token/blob/master/documentation/example_implementation_documentation.pdf)
+1. [OpenPAYGO documentation site](https://enaccess.github.io/OpenPAYGO-docs/docs/openpaygo-token/introduction)
+2. [OPENPAYG Token general documentation (PDF)](https://github.com/EnAccess/OpenPAYGO-Token/blob/main/documentation/general_documentation.pdf)
+3. [OPENPAYG Token example documentation (PDF)](https://github.com/EnAccess/OpenPAYGO-Token/blob/main/documentation/example_implementation_documentation.pdf)
+
+## INTEROPERABILITY
+
+Interoperability with the current official implementations
+([OpenPAYGO-python](https://github.com/EnAccess/OpenPAYGO-python),
+[OpenPAYGO-js](https://github.com/EnAccess/OpenPAYGO-js)) is locked in by test:
+
+- The official 80-vector interop corpus (`test/vectors/sample_tokens.json`,
+  copied verbatim from the official repositories) passes in both the encode and
+  decode directions — standard, extended, and restricted digit set variants
+  (`test/interop.test.ts`).
+- The documentation's scenario 1 test procedure passes end to end
+  (`test/openpaygo.test.ts`).
+
+Like the current official implementations, extended (12 digit) tokens use the
+same parity-based count scheme as standard tokens, and the counter sync
+validity window is `MAX_TOKEN_JUMP` (64) counts below the device count.
 
 ## CHANGES FROM THE REFERENCE IMPLEMENTATION
 
 Per the Apache 2.0 license of the OpenPAYGO Token project, changes relative to the
-official Python reference implementation are documented here:
+official implementations are documented here:
 
-- Standard 9 digit tokens are byte-for-byte compatible with the reference
-  (verified against the official scenario 1 test vectors in `test/openpaygo.test.ts`).
-- Extended (12 digit) tokens follow the reference scheme (count increments by 1,
-  no Add/Set Time modes), but the decoder searches counts up to
-  `lastCount + MAX_TOKEN_JUMP` (like the standard scheme) instead of the reference's
-  fixed 0-30 window, and stores the matched count directly rather than `count - 1`
-  so replayed extended tokens are rejected.
 - The invalid-token waiting period (1 minute doubling to a 512 minute cap) is
-  implemented in `Meter` as recommended by the general documentation's
-  Security Considerations.
-- Restricted digit set mode (tokens using only digits 1-4) is supported by both
-  `Server` and `Meter`.
+  implemented in `Meter` as recommended by the documentation's Security
+  Considerations (the official libraries leave it to the integrator).
+- `decodeToken` only applies `valueDivider` to real activation values — the
+  reserved values 998 (disable) and 999 (counter sync) are returned unscaled so
+  they remain recognisable signals.
+- `generateStartingCode` follows the Python implementation (hash of the raw
+  16 key bytes), which is the behaviour the official test vectors were
+  generated with.

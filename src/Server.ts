@@ -1,6 +1,7 @@
 import { debuglog } from "node:util";
 
 import { encode, encodeExtended } from "./encode.ts";
+import { generateStartingCode } from "./generateNextToken.ts";
 import { convertTo4DigitToken } from "./utils.ts";
 
 import {
@@ -10,7 +11,6 @@ import {
   PAYG_DISABLE_VALUE,
   COUNTER_SYNC_VALUE,
   TOKEN_TYPE_ADD_TIME,
-  STARTING_CODE,
   STARTING_COUNT,
   type Logger,
   type SipHashKey,
@@ -18,7 +18,7 @@ import {
 } from "./constants.ts";
 
 export interface ServerOptions {
-  /** the device's 9 digit starting code, defaults to 123456789 */
+  /** the device's 9 digit starting code; derived from the key if omitted */
   startingCode?: number;
   /** siphash key (4 x uint32), see keyFromHex */
   key?: SipHashKey;
@@ -44,8 +44,8 @@ export class Server {
   logger: Logger;
 
   constructor({
-    startingCode = STARTING_CODE,
     key = KEY,
+    startingCode = generateStartingCode(key),
     startingCount = STARTING_COUNT,
     timeDivider = 1,
     restrictedDigitSet = false,
@@ -92,17 +92,24 @@ export class Server {
 
   /**
    * @param value - value to encode (0-999999), extended tokens carry
-   *   device-specific data and have no add/set time modes
+   *   device-specific data (6 digit values)
+   * @param mode - whether the token is add time or set time
    * @returns the 12 digit token (20 digits in restricted digit set mode)
    */
-  generateExtendedTokenForValue(value: number): string {
+  generateExtendedTokenForValue(value: number, mode: TokenType = TOKEN_TYPE_ADD_TIME): string {
     if (!Number.isInteger(value) || value < 0 || value > EXTENDED_MAX_ACTIVATION_VALUE) {
       throw Error(`INVALID VALUE: must be 0-${EXTENDED_MAX_ACTIVATION_VALUE}`);
     }
 
     this.logger(`starting code: ${this.startingCode}, value: ${value}, token_count: ${this.count}`);
 
-    const { finalToken, newCount } = encodeExtended(this.key, this.startingCode, value, this.count);
+    const { finalToken, newCount } = encodeExtended(
+      this.key,
+      this.startingCode,
+      value,
+      this.count,
+      mode,
+    );
     this.count = newCount;
 
     return this.restrictedDigitSet ? convertTo4DigitToken(Number(finalToken), 40) : finalToken;

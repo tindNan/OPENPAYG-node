@@ -1,5 +1,6 @@
 import siphash from "siphash";
 
+import { generateStartingCode } from "./generateNextToken.ts";
 import { encode, encodeExtended } from "./encode.ts";
 import { decode, decodeExtended, type DecodeResult, type DecodeExtendedResult } from "./decode.ts";
 import { keyFromHex, convertTo4DigitToken, convertFrom4DigitToken } from "./utils.ts";
@@ -17,14 +18,16 @@ const {
 export interface GenerateTokenOptions {
   /** siphash key, see keyFromHex */
   key: SipHashKey;
-  /** the device's 9 digit starting code */
-  startingCode: number;
+  /** the device's 9 digit starting code; derived from the key if omitted */
+  startingCode?: number;
   /** days of activation (0-995), 998 disables PAYG, 999 syncs the counter */
   value: number;
   /** the current token count kept by the server */
   count: number;
   /** TOKEN_TYPE_ADD_TIME (default) or TOKEN_TYPE_SET_TIME */
   mode?: TokenType;
+  /** multiplied into the value before encoding (e.g. 4 => quarter-day units) */
+  valueDivider?: number;
   /** emit a 15 digit token using only digits 1-4 */
   restrictedDigitSet?: boolean;
 }
@@ -40,12 +43,14 @@ export interface DecodeTokenOptions {
   token: string | number;
   /** siphash key, see keyFromHex */
   key: SipHashKey;
-  /** the device's 9 digit starting code */
-  startingCode: number;
+  /** the device's 9 digit starting code; derived from the key if omitted */
+  startingCode?: number;
   /** the device's last known token count */
   lastCount: number;
   /** counts already used (for out-of-order add-time tokens) */
   usedCounts?: readonly number[];
+  /** the decoded value is divided by this before being returned */
+  valueDivider?: number;
   /** token was entered using only digits 1-4 */
   restrictedDigitSet?: boolean;
 }
@@ -53,12 +58,14 @@ export interface DecodeTokenOptions {
 export interface GenerateExtendedTokenOptions {
   /** siphash key, see keyFromHex */
   key: SipHashKey;
-  /** the device's 12 digit starting code */
-  startingCode: number;
+  /** the device's 12 digit starting code; derived from the key if omitted */
+  startingCode?: number;
   /** value to encode (0-999999) */
   value: number;
   /** the current token count kept by the server */
   count: number;
+  /** TOKEN_TYPE_ADD_TIME (default) or TOKEN_TYPE_SET_TIME */
+  mode?: TokenType;
   /** emit a 20 digit token using only digits 1-4 */
   restrictedDigitSet?: boolean;
 }
@@ -68,10 +75,14 @@ export interface DecodeExtendedTokenOptions {
   token: string | number;
   /** siphash key, see keyFromHex */
   key: SipHashKey;
-  /** the device's 12 digit starting code */
-  startingCode: number;
+  /** the device's 12 digit starting code; derived from the key if omitted */
+  startingCode?: number;
   /** the device's last known token count */
   lastCount: number;
+  /** counts already used (for out-of-order add-time tokens) */
+  usedCounts?: readonly number[];
+  /** the decoded value is divided by this before being returned */
+  valueDivider?: number;
   /** token was entered using only digits 1-4 */
   restrictedDigitSet?: boolean;
 }
@@ -91,12 +102,16 @@ function assertStandardValue(value: number): void {
 /** Generates a standard 9 digit OpenPAYGO token */
 export function generateToken({
   key,
-  startingCode,
+  startingCode = generateStartingCode(key),
   value,
   count,
   mode = TOKEN_TYPE_ADD_TIME,
+  valueDivider = 1,
   restrictedDigitSet = false,
 }: GenerateTokenOptions): GeneratedToken {
+  if (value <= MAX_ACTIVATION_VALUE) {
+    value = Math.round(value * valueDivider);
+  }
   assertStandardValue(value);
   const { finalToken, newCount } = encode(key, startingCode, value, count, mode);
 
@@ -114,31 +129,41 @@ export function generateToken({
 export function decodeToken({
   token,
   key,
-  startingCode,
+  startingCode = generateStartingCode(key),
   lastCount,
   usedCounts = [],
+  valueDivider = 1,
   restrictedDigitSet = false,
 }: DecodeTokenOptions): DecodeResult {
   if (restrictedDigitSet) {
     token = convertFrom4DigitToken(token);
   }
 
-  return decode(token, startingCode, key, lastCount, usedCounts);
+  const result = decode(token, startingCode, key, lastCount, usedCounts);
+
+  // reserved values (998 disable, 999 sync) and the -2/null sentinels are
+  // signals, not activation amounts, so the divider only applies to real values
+  if (valueDivider !== 1 && result.count !== null && result.value <= MAX_ACTIVATION_VALUE) {
+    return { ...result, value: result.value / valueDivider };
+  }
+
+  return result;
 }
 
-/** Generates an extended 12 digit OpenPAYGO token (device-specific data, no add/set time modes) */
+/** Generates an extended 12 digit OpenPAYGO token (device-specific data, 6 digit values) */
 export function generateExtendedToken({
   key,
-  startingCode,
+  startingCode = generateStartingCode(key),
   value,
   count,
+  mode = TOKEN_TYPE_ADD_TIME,
   restrictedDigitSet = false,
 }: GenerateExtendedTokenOptions): GeneratedToken {
   if (!Number.isInteger(value) || value < 0 || value > EXTENDED_MAX_ACTIVATION_VALUE) {
     throw Error(`INVALID VALUE: must be 0-${EXTENDED_MAX_ACTIVATION_VALUE}`);
   }
 
-  const { finalToken, newCount } = encodeExtended(key, startingCode, value, count);
+  const { finalToken, newCount } = encodeExtended(key, startingCode, value, count, mode);
 
   return {
     token: restrictedDigitSet ? convertTo4DigitToken(Number(finalToken), 40) : finalToken,
@@ -153,15 +178,23 @@ export function generateExtendedToken({
 export function decodeExtendedToken({
   token,
   key,
-  startingCode,
+  startingCode = generateStartingCode(key),
   lastCount,
+  usedCounts = [],
+  valueDivider = 1,
   restrictedDigitSet = false,
 }: DecodeExtendedTokenOptions): DecodeExtendedResult {
   if (restrictedDigitSet) {
     token = convertFrom4DigitToken(token);
   }
 
-  return decodeExtended(token, startingCode, key, lastCount);
+  const result = decodeExtended(token, startingCode, key, lastCount, usedCounts);
+
+  if (valueDivider !== 1 && result.count !== null) {
+    return { ...result, value: result.value / valueDivider };
+  }
+
+  return result;
 }
 
 // high-level stateful classes
@@ -169,7 +202,7 @@ export { Server, type ServerOptions } from "./Server.ts";
 export { Meter, type MeterOptions } from "./Meter.ts";
 
 // key helpers
-export { keyFromHex };
+export { keyFromHex, generateStartingCode };
 export const keyFromString16 = siphash.string16_to_key;
 
 // spec constants and shared types

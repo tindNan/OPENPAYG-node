@@ -27,6 +27,25 @@ export function generateNextToken(currentToken: number, key: SipHashKey): number
   return convertTo30Bits(res);
 }
 
+/**
+ * Derives a deterministic 9 digit starting code from the secret key by hashing
+ * the 16 raw key bytes with the key itself (current OpenPAYGO ecosystem
+ * behaviour, used when a device has no explicitly assigned starting code)
+ */
+export function generateStartingCode(key: SipHashKey): number {
+  // reconstruct the 16 key bytes from the 4 little-endian uint32 words,
+  // matching the layout produced by keyFromHex
+  const bytes = new Uint8Array(16);
+  const view = new DataView(bytes.buffer);
+  for (let i = 0; i < 4; i++) {
+    view.setUint32(i * 4, (key[i] ?? 0) >>> 0, true);
+  }
+
+  const { l: low, h: high } = siphash.hash(key, bytes);
+  const res = (high ^ low) >>> 0;
+  return convertTo30Bits(res);
+}
+
 export function generateNextExtendedToken(currentToken: number, key: SipHashKey): number {
   const buf = new ArrayBuffer(8);
   const view = new DataView(buf);

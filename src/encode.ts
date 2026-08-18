@@ -1,4 +1,9 @@
-import { TOKEN_TYPE_SET_TIME, type SipHashKey, type TokenType } from "./constants.ts";
+import {
+  TOKEN_TYPE_ADD_TIME,
+  TOKEN_TYPE_SET_TIME,
+  type SipHashKey,
+  type TokenType,
+} from "./constants.ts";
 import {
   encodeBase,
   getTokenBase,
@@ -38,19 +43,20 @@ export function encode(
   return { newCount, finalToken };
 }
 
-// the extended (12 digit) scheme has no ADD_TIME/SET_TIME modes,
-// the count simply increments by 1 for each token generated
+// extended (12 digit) tokens use the same parity-based count scheme as
+// standard tokens (current OpenPAYGO-python/JS ecosystem behaviour)
 export function encodeExtended(
   key: SipHashKey,
   startingCode: number,
   value: number,
   count: number,
+  mode: TokenType = TOKEN_TYPE_ADD_TIME,
 ): EncodeResult {
   const startingCodeBase = getExtendedTokenBase(startingCode);
   const tokenBase = encodeExtendedBase(startingCodeBase, value);
   let currentToken = putBaseInExtendedToken(startingCode, tokenBase);
 
-  const newCount = count + 1;
+  const newCount = getNextCount(count, mode);
 
   for (let xn = 0; xn < newCount; xn++) {
     currentToken = generateNextExtendedToken(currentToken, key);
@@ -61,7 +67,7 @@ export function encodeExtended(
   return { newCount, finalToken };
 }
 
-function getNextCount(count: number, mode: TokenType): number {
+export function getNextCount(count: number, mode: TokenType): number {
   const currentCountOdd = count % 2;
 
   let newCount: number;

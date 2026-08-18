@@ -124,18 +124,29 @@ describe("extended 12 digit tokens", () => {
     }
   });
 
-  test("count increments by 1 per token (no add/set modes)", () => {
-    const { newCount } = encodeExtended(TEST_KEY, EXT_STARTING_CODE, 1, 5);
-    assert.strictEqual(newCount, 6);
+  test("counts follow the add/set parity scheme like standard tokens", () => {
+    // add time tokens sit on even counts, set time tokens on odd counts
+    assert.strictEqual(encodeExtended(TEST_KEY, EXT_STARTING_CODE, 1, 5).newCount, 6);
+    assert.strictEqual(encodeExtended(TEST_KEY, EXT_STARTING_CODE, 1, 6).newCount, 8);
+    assert.strictEqual(
+      encodeExtended(TEST_KEY, EXT_STARTING_CODE, 1, 5, TOKEN_TYPE_SET_TIME).newCount,
+      7,
+    );
+    assert.strictEqual(
+      encodeExtended(TEST_KEY, EXT_STARTING_CODE, 1, 6, TOKEN_TYPE_SET_TIME).newCount,
+      7,
+    );
   });
 
-  test("rejects a replayed extended token", () => {
+  test("rejects a replayed extended token as old (-2)", () => {
     const { finalToken } = encodeExtended(TEST_KEY, EXT_STARTING_CODE, 42, 0);
     const first = decodeExtended(finalToken, EXT_STARTING_CODE, TEST_KEY, 0);
     assert.strictEqual(first.value, 42);
     assert.ok(first.count !== null);
-    const replay = decodeExtended(finalToken, EXT_STARTING_CODE, TEST_KEY, first.count);
-    assert.strictEqual(replay.value, null);
+    const replay = decodeExtended(finalToken, EXT_STARTING_CODE, TEST_KEY, first.count, [
+      first.count,
+    ]);
+    assert.strictEqual(replay.value, -2);
   });
 });
 

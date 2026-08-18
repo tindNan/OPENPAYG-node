@@ -12,6 +12,7 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "types": ["node"],
+    "resolveJsonModule": true,
     "skipLibCheck": true,
     "noEmit": true
   },
