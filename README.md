@@ -102,6 +102,82 @@ Like the current official implementations, extended (12 digit) tokens use the
 same parity-based count scheme as standard tokens, and the counter sync
 validity window is `MAX_TOKEN_JUMP` (64) counts below the device count.
 
+## SPEC EVOLUTION: 2019 REFERENCE VS CURRENT ECOSYSTEM
+
+The published documentation (PDFs and docs site) still describes the 2019
+reference implementation ([OpenPAYGO-Token](https://github.com/EnAccess/OpenPAYGO-Token)),
+but the current official libraries (OpenPAYGO-python, OpenPAYGO-js) — which
+generate the shared interop test vectors — have evolved past it in several
+places. This library follows the **current ecosystem** behaviour. The
+differences that matter for interoperability:
+
+| Behaviour | 2019 reference | Current ecosystem (this library) |
+| --- | --- | --- |
+| Extended (12 digit) token counts | `count + 1` per token, no Add/Set modes | Same parity scheme as standard tokens: Add Time on even counts, Set Time / Disable / Sync on odd counts |
+| Extended token replay protection | Simple `count > lastCount` check; decoder stored `count - 1`, which re-accepted replayed tokens | Full `countIsValid` + used-counts tracking, identical to the standard path |
+| Extended decode search window | Fixed 0–30 counts from zero (broke once the device count passed 29) | `lastCount + MAX_TOKEN_JUMP + 1`, like standard tokens |
+| Counter sync validity window | Hardcoded `lastCount - 30` | `lastCount - MAX_TOKEN_JUMP` (64) |
+| Starting code | Always explicitly assigned per device | Optionally derived from the key: `generateStartingCode(key)` = the token-conversion of `siphash(key, key_bytes)` |
+| Token type identifiers | `SET_TIME = 1`, `ADD_TIME = 2` (what this library exports) | `ADD_TIME = 1`, `SET_TIME = 2`, plus `DISABLE_PAYG`/`COUNTER_SYNC`/`INVALID`/`ALREADY_USED` |
+
+On the last row: the numeric identifiers never appear in tokens — only count
+*parity* is on the wire, and both generations agree on it (Add Time = even).
+Compare decoded results against this library's exported `TOKEN_TYPE_*`
+constants, never against literal numbers from another library.
+
+Values `998` (disable PAYG) and `999` (counter sync) keep their meaning in
+extended tokens too — the ecosystem did not move them to 6 digit equivalents.
+
+## JAVASCRIPT PORTING NOTES: ENDIANNESS AND OTHER FOOTGUNS
+
+The reference implementation is Python, where integers are arbitrary-precision
+and `bytes` are explicit. Porting the algorithm to JavaScript crosses several
+traps; these are the ones that actually bite (some have bitten the official
+JS library), and how this codebase handles them.
+
+**Message bytes are big-endian, key words are little-endian.** The SipHash
+*message* is the token packed big-endian (Python `struct.pack(">L", token)`
+duplicated to 8 bytes; 8 byte `">Q"` for extended). But siphash-js consumes the
+*key* as four uint32 words read **little**-endian from the 16 key bytes. Mixing
+these up produces valid-looking tokens that no other implementation accepts.
+`keyFromHex` packs LE (`getUint32(i * 4, true)`); the token buffers are written
+BE (`setUint32(offset, value, false)`).
+
+**Never use `new Uint32Array(buffer)` to read protocol data.** Typed-array
+views use the *platform's* byte order (little-endian on every mainstream CPU,
+but not guaranteed). `DataView` with an explicit endianness flag is the
+portable way to express what the spec means. (OpenPAYGO-js reads its key with
+`new Uint32Array(buf)` — it works on common hardware by coincidence, not by
+contract.)
+
+**JS bitwise operators are signed 32-bit.** The spec's 29.5-bit mask,
+`((1 << (32 - 2 + 1)) - 1) << 2`, is `0x1FFFFFFFC` in Python but overflows to
+`-4` in JavaScript (`1 << 31` is already negative). The expression still works
+here — but only because the subsequent `&` also truncates to 32 bits, so the
+wrong intermediate collapses to the right answer. Any bit manipulation that
+must be unsigned has to end in `>>> 0` (see `(high ^ low) >>> 0` in
+`generateNextToken`); forgetting it yields negative "tokens".
+
+**32-bit writes throw beyond 2³², doubles lie beyond 2⁵³.** A 12 digit
+extended token does not fit `setUint32`/`writeUInt32BE` — the write throws (the
+official JS library's extended decode currently crashes exactly this way).
+The 64-bit SipHash output doesn't fit a JS number at all: reassembling it as
+`Number` silently loses low bits above 2⁵³. The extended path therefore stays
+in `BigInt` end to end: `setBigUint64` for the message, and
+`(BigInt(high >>> 0) << 32n) | BigInt(low >>> 0)` — with the inner `>>> 0`
+first, because siphash-js word halves are 32-bit values that must be made
+unsigned *before* they are widened.
+
+**Strings are not bytes.** Hashing a hex *string* hashes its UTF-8 characters,
+not the 16 bytes it spells. This is why `generateStartingCode` here follows the
+Python implementation (hash of the decoded key bytes, verified equal against
+it) rather than OpenPAYGO-js, whose starting-code derivation hashes the hex
+string itself and disagrees with the Python-generated test vectors.
+
+**Sanity anchor.** When touching any of this, the official interop corpus
+(`npm test`, `test/interop.test.ts`) is the ground truth: 80 tokens generated
+by the reference implementation must survive both directions bit-for-bit.
+
 ## CHANGES FROM THE REFERENCE IMPLEMENTATION
 
 Per the Apache 2.0 license of the OpenPAYGO Token project, changes relative to the
