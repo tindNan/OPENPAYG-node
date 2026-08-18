@@ -1,77 +1,82 @@
-# DOC
+# OpenPAYGO Token for Node.js
 
-This is a nodejs implementation of the python example provided in https://github.com/EnAccess/OpenPAYGO-Token.
-In case of anything please feel free to open an issue.
+This library is an implementation of the OpenPAYGO Token system for Node.js.
+The initial version was a port of the Python example in
+https://github.com/EnAccess/OpenPAYGO-Token. If you find a problem, open an
+issue on GitHub.
 
-The library is written in strict TypeScript and ships as ESM with type
-declarations. Node >= 22.18 is required (tests run the TypeScript sources
-directly on Node's built-in type stripping; `npm run build` compiles `src/`
-to `dist/` for publishing).
+The code is strict TypeScript. The package is an ECMAScript module (ESM) and
+includes type declarations. Node.js 22.18 or later is necessary. The tests run
+the TypeScript source files directly.
 
-## USAGE
+## COMMANDS
 
 ```sh
-npm test                          # spec test vectors + end-to-end scenarios (node:test)
-NODE_DEBUG=openpaygo npm test     # same, with the meter/server internal decisions logged
-npm run typecheck                 # strict tsc, no emit
-npm run build                     # compile src/ to dist/ (.js + .d.ts)
+npm test                          # run the spec test vectors and the end-to-end scenarios
+NODE_DEBUG=openpaygo npm test     # run the tests and show the internal log messages
+npm run typecheck                 # do a strict type check, without output files
+npm run build                     # compile src/ into dist/ (.js and .d.ts files)
 ```
 
-The end-to-end server -> meter flows (purchases, replays, corrections, counter
-resync, extended tokens) live in `test/scenario.test.ts`.
+The file `test/scenario.test.ts` contains the end-to-end scenarios. These
+scenarios show purchases, replayed tokens, corrections, counter
+synchronisation, and extended tokens.
 
-## USAGE AS A LIBRARY
+## HOW TO USE THE LIBRARY
 
-The package entry point exposes the spec contract at two levels. CommonJS
-consumers on Node >= 22 can still `require()` the package via require(esm).
+The package gives you two levels of access. Node.js 22 or later can also load
+the package with `require()`.
 
-### Low-level pure functions
+### Level 1: pure functions
 
 ```ts
 import { generateToken, decodeToken, keyFromHex, constants } from "openpayg-token-node";
 
 const key = keyFromHex("a29ab82edc5fbbc41ec9530f6dac86b1"); // 16 byte device key as hex
 
-// server side: generate a token, persist newCount for the device
+// server side: generate a token, then keep newCount for the device
 const { token, newCount } = generateToken({
   key,
   startingCode: 123456789,
   value: 30, // days (0-995), 998 = disable PAYG, 999 = counter sync
-  count: 0, // the device's current count on the server
+  count: 0, // the current count of the device, kept on the server
   mode: constants.TOKEN_TYPE_ADD_TIME, // or TOKEN_TYPE_SET_TIME
 });
 
-// device side: decode and validate an entered token
+// device side: decode a token and make sure that it is valid
 const { value, count, type } = decodeToken({
   token,
   key,
   startingCode: 123456789,
-  lastCount: 0, // the device's last known count
-  usedCounts: [], // previously used counts, enables out-of-order add-time tokens
+  lastCount: 0, // the last known count of the device
+  usedCounts: [], // counts used before; permits add-time tokens out of sequence
 });
-// value: the activation value, -2 for an already used token, null if invalid
-
-// 12 digit extended tokens: generateExtendedToken / decodeExtendedToken
-// tokens using only digits 1-4: pass restrictedDigitSet: true on both sides
+// value: the activation value, -2 for a used token, null for an invalid token
 ```
 
-### High-level stateful classes
+Use `generateExtendedToken` and `decodeExtendedToken` for 12 digit extended
+tokens. Set `restrictedDigitSet: true` on the server and on the device for
+tokens that use only the digits 1 to 4.
+
+### Level 2: stateful classes
 
 ```ts
 import { Server, Meter, keyFromHex } from "openpayg-token-node";
 
 const key = keyFromHex("a29ab82edc5fbbc41ec9530f6dac86b1");
 const server = new Server({ startingCode: 123456789, key, startingCount: 0 });
-// Meter tracks count, used counts, PAYG state and the waiting period after invalid tokens
 const meter = new Meter({ startingCode: 123456789, key, startingCount: 0 });
 
 const token = server.generateTokenForValue(30);
 const { value } = meter.enterToken(token);
 ```
 
-Both classes are silent by default. Their internal decisions are logged through
-`util.debuglog`, so run with `NODE_DEBUG=openpaygo` to see them — or pass your own
-sink via the `logger` option (`console.log`, a pino method, etc.):
+The `Meter` class keeps the count, the used counts, the PAYG status, and the
+waiting period after invalid tokens.
+
+The two classes do not write log messages in normal operation. Set the
+environment variable `NODE_DEBUG=openpaygo` to see the log messages. As an
+alternative, supply your own log function with the `logger` option:
 
 ```ts
 import pino from "pino";
@@ -82,113 +87,123 @@ const meter = new Meter({ startingCode: 123456789, key, logger: (msg) => log.deb
 ## REFERENCE DOCUMENTATION
 
 1. [OpenPAYGO documentation site](https://enaccess.github.io/OpenPAYGO-docs/docs/openpaygo-token/introduction)
-2. [OPENPAYG Token general documentation (PDF)](https://github.com/EnAccess/OpenPAYGO-Token/blob/main/documentation/general_documentation.pdf)
-3. [OPENPAYG Token example documentation (PDF)](https://github.com/EnAccess/OpenPAYGO-Token/blob/main/documentation/example_implementation_documentation.pdf)
+2. [OpenPAYGO Token general documentation (PDF)](https://github.com/EnAccess/OpenPAYGO-Token/blob/main/documentation/general_documentation.pdf)
+3. [OpenPAYGO Token example documentation (PDF)](https://github.com/EnAccess/OpenPAYGO-Token/blob/main/documentation/example_implementation_documentation.pdf)
 
 ## INTEROPERABILITY
 
-Interoperability with the current official implementations
-([OpenPAYGO-python](https://github.com/EnAccess/OpenPAYGO-python),
-[OpenPAYGO-js](https://github.com/EnAccess/OpenPAYGO-js)) is locked in by test:
+Tests make sure that this library agrees with the current official
+implementations ([OpenPAYGO-python](https://github.com/EnAccess/OpenPAYGO-python)
+and [OpenPAYGO-js](https://github.com/EnAccess/OpenPAYGO-js)):
 
-- The official 80-vector interop corpus (`test/vectors/sample_tokens.json`,
-  copied verbatim from the official repositories) passes in both the encode and
-  decode directions — standard, extended, and restricted digit set variants
-  (`test/interop.test.ts`).
-- The documentation's scenario 1 test procedure passes end to end
-  (`test/openpaygo.test.ts`).
+- The official test corpus of 80 vectors is in
+  `test/vectors/sample_tokens.json`. It is an exact copy from the official
+  repositories. The file `test/interop.test.ts` encodes and decodes each
+  vector. This includes the standard, extended, and restricted digit set
+  variants.
+- The file `test/openpaygo.test.ts` does the scenario 1 test procedure from
+  the documentation.
 
-Like the current official implementations, extended (12 digit) tokens use the
-same parity-based count scheme as standard tokens, and the counter sync
-validity window is `MAX_TOKEN_JUMP` (64) counts below the device count.
+This library uses the same rules as the current official implementations.
+Extended (12 digit) tokens use the parity count scheme of standard tokens.
+The counter sync window is `MAX_TOKEN_JUMP` (64) counts below the device
+count.
 
-## SPEC EVOLUTION: 2019 REFERENCE VS CURRENT ECOSYSTEM
+## SPEC CHANGES: 2019 REFERENCE COMPARED WITH THE CURRENT ECOSYSTEM
 
-The published documentation (PDFs and docs site) still describes the 2019
-reference implementation ([OpenPAYGO-Token](https://github.com/EnAccess/OpenPAYGO-Token)),
-but the current official libraries (OpenPAYGO-python, OpenPAYGO-js) — which
-generate the shared interop test vectors — have evolved past it in several
-places. This library follows the **current ecosystem** behaviour. The
-differences that matter for interoperability:
+The published documentation (the PDF files and the documentation site) shows
+the 2019 reference implementation
+([OpenPAYGO-Token](https://github.com/EnAccess/OpenPAYGO-Token)). The current
+official libraries (OpenPAYGO-python and OpenPAYGO-js) changed some of that
+behaviour. The official test vectors come from these current libraries. This
+library obeys the current ecosystem behaviour. The table shows the differences
+that have an effect on interoperability:
 
 | Behaviour | 2019 reference | Current ecosystem (this library) |
 | --- | --- | --- |
-| Extended (12 digit) token counts | `count + 1` per token, no Add/Set modes | Same parity scheme as standard tokens: Add Time on even counts, Set Time / Disable / Sync on odd counts |
-| Extended token replay protection | Simple `count > lastCount` check; decoder stored `count - 1`, which re-accepted replayed tokens | Full `countIsValid` + used-counts tracking, identical to the standard path |
-| Extended decode search window | Fixed 0–30 counts from zero (broke once the device count passed 29) | `lastCount + MAX_TOKEN_JUMP + 1`, like standard tokens |
-| Counter sync validity window | Hardcoded `lastCount - 30` | `lastCount - MAX_TOKEN_JUMP` (64) |
-| Starting code | Always explicitly assigned per device | Optionally derived from the key: `generateStartingCode(key)` = the token-conversion of `siphash(key, key_bytes)` |
-| Token type identifiers | `SET_TIME = 1`, `ADD_TIME = 2` (what this library exports) | `ADD_TIME = 1`, `SET_TIME = 2`, plus `DISABLE_PAYG`/`COUNTER_SYNC`/`INVALID`/`ALREADY_USED` |
+| Extended (12 digit) token counts | `count + 1` for each token, no Add/Set modes | The parity scheme of standard tokens: Add Time on even counts; Set Time, Disable, and Sync on odd counts |
+| Extended token replay protection | Only a `count > lastCount` check; the decoder kept `count - 1`, thus it accepted a replayed token again | The full `countIsValid` check with used-counts records, the same as the standard path |
+| Extended decode search window | A fixed window of 0 to 30 counts from zero (this failed when the device count was more than 29) | `lastCount + MAX_TOKEN_JUMP + 1`, the same as standard tokens |
+| Counter sync window | A fixed `lastCount - 30` | `lastCount - MAX_TOKEN_JUMP` (64) |
+| Starting code | Always set for each device | Optional: `generateStartingCode(key)` calculates it from the key with `siphash(key, key_bytes)` |
+| Token type identifiers | `SET_TIME = 1`, `ADD_TIME = 2` (this library exports these values) | `ADD_TIME = 1`, `SET_TIME = 2`, and also `DISABLE_PAYG`, `COUNTER_SYNC`, `INVALID`, `ALREADY_USED` |
 
-On the last row: the numeric identifiers never appear in tokens — only count
-*parity* is on the wire, and both generations agree on it (Add Time = even).
-Compare decoded results against this library's exported `TOKEN_TYPE_*`
-constants, never against literal numbers from another library.
+Note: The token type identifiers are not part of the token. Only the count
+parity is part of the token. The two generations agree on the parity (Add
+Time = even). Compare decoded results with the `TOKEN_TYPE_*` constants that
+this library exports. Do not compare them with number literals from a
+different library.
 
-Values `998` (disable PAYG) and `999` (counter sync) keep their meaning in
-extended tokens too — the ecosystem did not move them to 6 digit equivalents.
+Note: The values `998` (disable PAYG) and `999` (counter sync) have the same
+meaning in extended tokens. The ecosystem did not replace them with 6 digit
+values.
 
-## JAVASCRIPT PORTING NOTES: ENDIANNESS AND OTHER FOOTGUNS
+## PRECAUTIONS FOR JAVASCRIPT PORTS: BYTE ORDER AND INTEGER LIMITS
 
-The reference implementation is Python, where integers are arbitrary-precision
-and `bytes` are explicit. Porting the algorithm to JavaScript crosses several
-traps; these are the ones that actually bite (some have bitten the official
-JS library), and how this codebase handles them.
+The reference implementation is Python. In Python, integers have no size
+limit, and the `bytes` type is explicit. JavaScript is different in ways that
+can cause incorrect tokens. The list below shows each risk and the applicable
+part of this code. Some of these risks caused defects in the official
+JavaScript library.
 
-**Message bytes are big-endian, key words are little-endian.** The SipHash
-*message* is the token packed big-endian (Python `struct.pack(">L", token)`
-duplicated to 8 bytes; 8 byte `">Q"` for extended). But siphash-js consumes the
-*key* as four uint32 words read **little**-endian from the 16 key bytes. Mixing
-these up produces valid-looking tokens that no other implementation accepts.
-`keyFromHex` packs LE (`getUint32(i * 4, true)`); the token buffers are written
-BE (`setUint32(offset, value, false)`).
+**CAUTION: The message bytes are big-endian, but the key words are
+little-endian.** The SipHash message is the token in big-endian byte order
+(Python `struct.pack(">L", token)`, copied to 8 bytes; `">Q"` for extended
+tokens). But siphash-js reads the key as four uint32 words in little-endian
+byte order. If you interchange the two byte orders, the tokens look correct
+but no other implementation accepts them. The function `keyFromHex` writes the
+key words little-endian (`getUint32(i * 4, true)`). The code writes the token
+buffers big-endian (`setUint32(offset, value, false)`).
 
-**Never use `new Uint32Array(buffer)` to read protocol data.** Typed-array
-views use the *platform's* byte order (little-endian on every mainstream CPU,
-but not guaranteed). `DataView` with an explicit endianness flag is the
-portable way to express what the spec means. (OpenPAYGO-js reads its key with
-`new Uint32Array(buf)` — it works on common hardware by coincidence, not by
-contract.)
+**CAUTION: Do not use `new Uint32Array(buffer)` to read protocol data.** A
+typed array uses the byte order of the platform. This is little-endian on
+usual hardware, but the language does not make sure of it. Use `DataView` with
+an explicit byte order flag. (OpenPAYGO-js reads its key with
+`new Uint32Array(buf)`. That is correct on usual hardware only by chance.)
 
-**JS bitwise operators are signed 32-bit.** The spec's 29.5-bit mask,
-`((1 << (32 - 2 + 1)) - 1) << 2`, is `0x1FFFFFFFC` in Python but overflows to
-`-4` in JavaScript (`1 << 31` is already negative). The expression still works
-here — but only because the subsequent `&` also truncates to 32 bits, so the
-wrong intermediate collapses to the right answer. Any bit manipulation that
-must be unsigned has to end in `>>> 0` (see `(high ^ low) >>> 0` in
-`generateNextToken`); forgetting it yields negative "tokens".
+**CAUTION: JavaScript bitwise operators use signed 32-bit integers.** The
+29.5-bit mask from the spec, `((1 << (32 - 2 + 1)) - 1) << 2`, is
+`0x1FFFFFFFC` in Python. In JavaScript the same expression overflows to `-4`,
+because `1 << 31` is negative. The code here stays correct only because the
+`&` operator that follows also cuts the value to 32 bits. Apply `>>> 0` to
+each bit operation that must give an unsigned result. See
+`(high ^ low) >>> 0` in `generateNextToken`. Without `>>> 0`, the result can
+be a negative number.
 
-**32-bit writes throw beyond 2³², doubles lie beyond 2⁵³.** A 12 digit
-extended token does not fit `setUint32`/`writeUInt32BE` — the write throws (the
-official JS library's extended decode currently crashes exactly this way).
-The 64-bit SipHash output doesn't fit a JS number at all: reassembling it as
-`Number` silently loses low bits above 2⁵³. The extended path therefore stays
-in `BigInt` end to end: `setBigUint64` for the message, and
-`(BigInt(high >>> 0) << 32n) | BigInt(low >>> 0)` — with the inner `>>> 0`
-first, because siphash-js word halves are 32-bit values that must be made
-unsigned *before* they are widened.
+**CAUTION: 32-bit writes fail above 2^32, and doubles lose precision above
+2^53.** A 12 digit extended token is too large for `setUint32` or
+`writeUInt32BE`. The write operation stops with an error. (The extended decode
+in the official JavaScript library fails in this way.) The 64-bit SipHash
+output is too large for a JavaScript number. If you make it a `Number`, the
+low bits above 2^53 are lost without a warning. Because of this, the extended
+path uses `BigInt` at each step: `setBigUint64` for the message, and
+`(BigInt(high >>> 0) << 32n) | BigInt(low >>> 0)` for the hash. Apply the
+inner `>>> 0` first. The word halves from siphash-js are 32-bit values that
+must become unsigned before you make them wider.
 
-**Strings are not bytes.** Hashing a hex *string* hashes its UTF-8 characters,
-not the 16 bytes it spells. This is why `generateStartingCode` here follows the
-Python implementation (hash of the decoded key bytes, verified equal against
-it) rather than OpenPAYGO-js, whose starting-code derivation hashes the hex
-string itself and disagrees with the Python-generated test vectors.
+**CAUTION: A string is not a byte sequence.** If you hash a hex string, you
+hash its UTF-8 characters, not the 16 bytes that the string specifies. For
+this reason, `generateStartingCode` here agrees with the Python
+implementation: it hashes the decoded key bytes. A test made sure that the two
+give equal results. OpenPAYGO-js hashes the hex string itself, and its result
+does not agree with the official test vectors.
 
-**Sanity anchor.** When touching any of this, the official interop corpus
-(`npm test`, `test/interop.test.ts`) is the ground truth: 80 tokens generated
-by the reference implementation must survive both directions bit-for-bit.
+Note: The official test corpus is the reference for all changes to this code.
+Run `npm test`. The 80 vectors in `test/interop.test.ts` must encode and
+decode with no differences.
 
 ## CHANGES FROM THE REFERENCE IMPLEMENTATION
 
-Per the Apache 2.0 license of the OpenPAYGO Token project, changes relative to the
-official implementations are documented here:
+The OpenPAYGO Token project uses the Apache 2.0 license. This license makes it
+necessary to document changes. The changes in this library, compared with the
+official implementations, are:
 
-- The invalid-token waiting period (1 minute doubling to a 512 minute cap) is
-  implemented in `Meter` as recommended by the documentation's Security
-  Considerations (the official libraries leave it to the integrator).
-- `decodeToken` only applies `valueDivider` to real activation values — the
-  reserved values 998 (disable) and 999 (counter sync) are returned unscaled so
-  they remain recognisable signals.
-- `generateStartingCode` follows the Python implementation (hash of the raw
-  16 key bytes), which is the behaviour the official test vectors were
-  generated with.
+- The `Meter` class contains the waiting period for invalid tokens (1 minute,
+  which becomes two times longer after each invalid token, to a maximum of 512
+  minutes). The documentation recommends this in its Security Considerations.
+  The official libraries do not contain it.
+- `decodeToken` applies `valueDivider` only to real activation values. The
+  reserved values 998 (disable) and 999 (counter sync) come back unchanged.
+  Thus they stay identifiable as signals.
+- `generateStartingCode` agrees with the Python implementation (a hash of the
+  16 raw key bytes). The official test vectors use this behaviour.
