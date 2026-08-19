@@ -119,14 +119,14 @@ behaviour. The official test vectors come from these current libraries. This
 library obeys the current ecosystem behaviour. The table shows the differences
 that have an effect on interoperability:
 
-| Behaviour | 2019 reference | Current ecosystem (this library) |
-| --- | --- | --- |
-| Extended (12 digit) token counts | `count + 1` for each token, no Add/Set modes | The parity scheme of standard tokens: Add Time on even counts; Set Time, Disable, and Sync on odd counts |
-| Extended token replay protection | Only a `count > lastCount` check; the decoder kept `count - 1`, thus it accepted a replayed token again | The full `countIsValid` check with used-counts records, the same as the standard path |
-| Extended decode search window | A fixed window of 0 to 30 counts from zero (this failed when the device count was more than 29) | `lastCount + MAX_TOKEN_JUMP + 1`, the same as standard tokens |
-| Counter sync window | A fixed `lastCount - 30` | `lastCount - MAX_TOKEN_JUMP` (64) |
-| Starting code | Always set for each device | Optional: `generateStartingCode(key)` calculates it from the key with `siphash(key, key_bytes)` |
-| Token type identifiers | `SET_TIME = 1`, `ADD_TIME = 2` (this library exports these values) | `ADD_TIME = 1`, `SET_TIME = 2`, and also `DISABLE_PAYG`, `COUNTER_SYNC`, `INVALID`, `ALREADY_USED` |
+| Behaviour                        | 2019 reference                                                                                          | Current ecosystem (this library)                                                                         |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Extended (12 digit) token counts | `count + 1` for each token, no Add/Set modes                                                            | The parity scheme of standard tokens: Add Time on even counts; Set Time, Disable, and Sync on odd counts |
+| Extended token replay protection | Only a `count > lastCount` check; the decoder kept `count - 1`, thus it accepted a replayed token again | The full `countIsValid` check with used-counts records, the same as the standard path                    |
+| Extended decode search window    | A fixed window of 0 to 30 counts from zero (this failed when the device count was more than 29)         | `lastCount + MAX_TOKEN_JUMP + 1`, the same as standard tokens                                            |
+| Counter sync window              | A fixed `lastCount - 30`                                                                                | `lastCount - MAX_TOKEN_JUMP` (64)                                                                        |
+| Starting code                    | Always set for each device                                                                              | Optional: `generateStartingCode(key)` calculates it from the key with `siphash(key, key_bytes)`          |
+| Token type identifiers           | `SET_TIME = 1`, `ADD_TIME = 2` (this library exports these values)                                      | `ADD_TIME = 1`, `SET_TIME = 2`, and also `DISABLE_PAYG`, `COUNTER_SYNC`, `INVALID`, `ALREADY_USED`       |
 
 Note: The token type identifiers are not part of the token. Only the count
 parity is part of the token. The two generations agree on the parity (Add
