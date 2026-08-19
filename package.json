@@ -1,8 +1,27 @@
 {
   "name": "openpayg-token-node",
   "version": "1.0.0",
-  "description": "Node.js implementation of the EnAccess OpenPAYGO Token system",
+  "description": "Node.js implementation of the EnAccess OpenPAYGO Token system, interoperable with the official implementations",
   "license": "Apache-2.0",
+  "author": "Shadrack Lilan",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tindNan/OPENPAYG-node.git"
+  },
+  "homepage": "https://github.com/tindNan/OPENPAYG-node#readme",
+  "bugs": {
+    "url": "https://github.com/tindNan/OPENPAYG-node/issues"
+  },
+  "keywords": [
+    "openpaygo",
+    "paygo",
+    "pay-as-you-go",
+    "token",
+    "enaccess",
+    "siphash",
+    "solar",
+    "metering"
+  ],
   "files": [
     "dist/",
     "README.md"
