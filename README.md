@@ -1,5 +1,8 @@
 # OpenPAYGO Token for Node.js
 
+[![CI](https://github.com/tindNan/OPENPAYG-node/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/tindNan/OPENPAYG-node/actions/workflows/ci.yaml)
+[![npm](https://img.shields.io/npm/v/openpayg-token-node)](https://www.npmjs.com/package/openpayg-token-node)
+
 This library is an implementation of the OpenPAYGO Token system for Node.js.
 The initial version was a port of the Python example in
 https://github.com/EnAccess/OpenPAYGO-Token. If you find a problem, open an
