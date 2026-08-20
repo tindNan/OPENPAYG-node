@@ -6,6 +6,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   checks:
     name: node ${{ matrix.node }}
@@ -39,3 +42,76 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  package:
+    name: package smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Pack the tarball
+        run: npm pack
+
+      - name: Install the tarball in a fresh project
+        run: |
+          mkdir /tmp/smoke && cd /tmp/smoke
+          npm init -y
+          npm install "$GITHUB_WORKSPACE"/openpayg-token-node-*.tgz
+
+      - name: Smoke test (ESM import)
+        working-directory: /tmp/smoke
+        run: |
+          cat > smoke.mjs <<'EOF'
+          import { generateToken, decodeToken, keyFromHex, constants } from "openpayg-token-node";
+          const key = keyFromHex("a29ab82edc5fbbc41ec9530f6dac86b1");
+          const { token } = generateToken({
+            key,
+            startingCode: 123456789,
+            value: 1,
+            count: 0,
+            mode: constants.TOKEN_TYPE_ADD_TIME,
+          });
+          if (token !== "662486790") throw new Error(`official vector mismatch: ${token}`);
+          const r = decodeToken({ token, key, startingCode: 123456789, lastCount: 0 });
+          if (r.value !== 1) throw new Error(`decode mismatch: ${r.value}`);
+          console.log("ESM smoke test passed");
+          EOF
+          node smoke.mjs
+
+      - name: Smoke test (require interop)
+        working-directory: /tmp/smoke
+        run: |
+          cat > smoke.cjs <<'EOF'
+          const { generateToken, keyFromHex, constants } = require("openpayg-token-node");
+          const { token } = generateToken({
+            key: keyFromHex("a29ab82edc5fbbc41ec9530f6dac86b1"),
+            startingCode: 123456789,
+            value: 1,
+            count: 0,
+            mode: constants.TOKEN_TYPE_ADD_TIME,
+          });
+          if (token !== "662486790") throw new Error(`official vector mismatch: ${token}`);
+          console.log("require() smoke test passed");
+          EOF
+          node smoke.cjs
+
+      - name: Smoke test (TypeScript declarations)
+        working-directory: /tmp/smoke
+        run: |
+          npm install typescript@7 @types/node@26
+          cat > smoke.ts <<'EOF'
+          import { generateToken, keyFromHex, type DecodeResult } from "openpayg-token-node";
+          const check: DecodeResult | null = null;
+          void check;
+          const { token } = generateToken({ key: keyFromHex("a29ab82edc5fbbc41ec9530f6dac86b1"), value: 1, count: 0 });
+          void token;
+          EOF
+          npx tsc --strict --noEmit --module nodenext --target es2022 smoke.ts
